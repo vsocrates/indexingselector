@@ -104,4 +104,4 @@ venv.bak/
 .mypy_cache/
 
 # no XML files either (too big)
-.xml
+*.xml
