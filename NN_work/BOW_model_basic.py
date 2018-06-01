@@ -24,6 +24,7 @@ import tensorflow as tf
 import lxml.etree as etree
 import re
 import math
+from nltk import word_tokenize
 
 MAX_DOCUMENT_LENGTH = 50
 EMBEDDING_SIZE = 50
@@ -167,8 +168,13 @@ def main(unused_argv):
       train_target_list.append(1)
     elif text['target'] == "PubMed-not-MEDLINE":
       train_target_list.append(0)
-        
 
+  word_tokenize_lengths = []
+  for text in X_train_docs:
+    word_tokenize_lengths.append(len(word_tokenize(text)))
+  
+  print("tokenized: ", word_tokenize_lengths)
+  print("max length: ", max(word_tokenize_lengths))
   # Process vocabulary
   vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
       MAX_DOCUMENT_LENGTH)
