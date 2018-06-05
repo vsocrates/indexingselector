@@ -26,8 +26,6 @@ def fast_iter(context, func, *args, **kwargs):
 def get_journals(elem, output_list):
   journal_title_element = elem.find(".//Title")
   medline_cit_tag = elem.find(".//MedlineCitation")
-  # print("journal", journal_title_element.text)
-  # print("cit", medline_cit_tag.get("Status"))
   if journal_title_element is not None:
     journal_title = str(journal_title_element.text)
     status = medline_cit_tag.get("Status")
@@ -44,6 +42,10 @@ def get_journals(elem, output_list):
         pos_neg_list[0] += 1
       elif status == "PubMed-not-MEDLINE":      
         pos_neg_list[1] += 1
+    # comment this section out if we don't want to populate with the BroadJournalHeadingList and MeshHeadingList 
+    medline_jrnl_info_elem = elem.find(".//MedlineJournalInfo")
+    nlm_uid = medline_jrnl_info_elem.find(".//NlmUniqueID")
+    
   else:
     print("We have no title for some reason?")
 
@@ -58,6 +60,7 @@ def main():
   xml_file = "cits.xml"
   # xml_file = "small_data.xml"
   output_fname = "pos_neg_by_journal_2014-2018.csv"
+  journal_data_fname = "journal_metadata.csv"
   journal_list = {}
   
   print("Starting Journal count on %s" % xml_file)
@@ -65,8 +68,6 @@ def main():
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
     fast_iter(context, get_journals, journal_list)
-
-  # print("final list", journal_list)
   
   with open(output_fname, "w", newline="") as csvfile:
     print("Writing to file: %s" % output_fname)  
