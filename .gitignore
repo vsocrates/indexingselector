@@ -109,3 +109,7 @@ venv.bak/
 # no excel files used for analysis
 *.xls
 *.xlsx
+
+# we probably don't need the csv's either.
+*.csv
+*.tsv
