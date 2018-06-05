@@ -57,7 +57,10 @@ def get_text_list(dictList):
 def main():
   xml_file = "cits.xml"
   # xml_file = "small_data.xml"
+  output_fname = "pos_neg_by_journal_2014-2018.csv"
   journal_list = {}
+  
+  print("Starting Journal count on %s" % xml_file)
 
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
@@ -65,12 +68,15 @@ def main():
 
   # print("final list", journal_list)
   
-  with open("pos_neg_by_journal.csv", "w", newline="") as csvfile:
+  with open(output_fname, "w", newline="") as csvfile:
+    print("Writing to file: %s" % output_fname)  
     spamwriter = csv.writer(csvfile, delimiter=',')
 
     for key, value in journal_list.items(): 
       spamwriter.writerow([key, value[0], value[1]])
 
+  
+  print("Done!")
   
 if __name__ == '__main__':
   main()
