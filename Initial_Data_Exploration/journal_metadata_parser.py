@@ -3,6 +3,8 @@ import re
 import math
 import csv
 
+# IMPORTANT: This file is incomplete, because we used Jim's work instead.
+
 def fast_iter(context, func, *args, **kwargs):
 	"""
 	http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
@@ -55,5 +57,5 @@ def main():
   
   journal_metadata = []
   with open(journal_data_fname, "rb") as journal_data:
-    journal_context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
+    journal_context = etree.iterparse(journal_data, events=('start', 'end', ), encoding='utf-8')
     fast_iter(journal_context, get_journal_metadata, journal_list)

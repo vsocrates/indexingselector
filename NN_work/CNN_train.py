@@ -17,10 +17,6 @@ from tensorflow.contrib.learn import preprocessing
 
 from data_utils import data_load
 from data_utils import get_batch
-from data_utils import get_target_list
-from data_utils import get_text_list
-from data_utils import process_element
-from data_utils import fast_iter
 from indexCNN import IndexClassCNN
 
 # Data loading Parameters

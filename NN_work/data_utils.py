@@ -35,7 +35,7 @@ def fast_iter(context, func, *args, **kwargs):
       root.clear()
   del context
 
-def process_element(elem, output_list):
+def get_abstract_text_with_targets(elem, output_list):
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
   if(output_text is not None):
@@ -75,7 +75,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
 
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, process_element, text_list)
+    fast_iter(context, get_abstract_text_with_targets, text_list)
     
   end_time = time.time()
   print("Total set size: " , len(text_list))
