@@ -4,13 +4,14 @@ import numpy as np
 
 import tensorflow as tf
 from tensorflow.contrib.learn import preprocessing
+from tensorflow.python.saved_model import tag_constants
 
 from data_utils import get_batch
 from data_utils import data_load
 
 # Evaluation Parameters
 BATCH_SIZE = 64
-MODEL_DIR = ""
+MODEL_DIR = r'C:\Users\socratesv2\Documents\indexingselector\NN_work\runs\1528419075\final'
 EVAL_TRAIN = True
 
 # Misc Parameters
@@ -55,10 +56,10 @@ def evaluate_CNN(X_test, Y_test, X_raw):
     print("Accuracy: {:g}".format(correct_predicions/float(len(Y_test))))
   
   predictions_csv = np.column_stack((np.array(X_raw), all_predictions))
-  out_put = os.path.join(MODEL_DIR, "..", "prediction.csv")
+  out_path = os.path.join(MODEL_DIR, "..", "prediction.csv")
   print("Saving evaluation to {0}".format(out_path))
-  with open(out_path, 'w') as f:
-    csv.writer(f).writerows(predictions_human_readable)
+  with open(out_path, 'w', encoding="utf8", newline="") as f:
+    csv.writer(f).writerows(predictions_csv)
     
 def main(argv=None):
   # xml_file = "pubmed_result.xml"

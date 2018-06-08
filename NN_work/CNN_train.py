@@ -36,9 +36,9 @@ DROPOUT_KEEP_PROB=0.5
 # Training Parameters
 ALLOW_SOFT_PLACEMENT=True
 LOG_DEVICE_PLACEMENT=False
-NUM_CHECKPOINTS = 5
+NUM_CHECKPOINTS = 1 # default 5
 BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 200
+NUM_EPOCHS = 10 # default 200
 EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set
 CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time
 

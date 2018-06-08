@@ -87,7 +87,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
   # then we will build the vocabulary
   max_document_length = max([len(str(x['text']).split(" ")) for x in text_list])
   count_vect = None
-  if vocab_processor is not None:
+  if premade_vocab_processor is not None:
     count_vect = premade_vocab_processor
   count_vect = preprocessing.VocabularyProcessor(max_document_length)
   X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
