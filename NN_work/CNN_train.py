@@ -1,132 +1,213 @@
 # Code heavily influenced by https://github.com/dennybritz/cnn-text-classification-tf
 
+
+import numpy as np
+import os
+import time
+import re
+import math
+import seaborn as sns
+import datetime
+import nltk 
+
 import lxml.etree as etree
 import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow.contrib.learn import preprocessing
-import numpy as np
-import os
- 
-import re
-import math
-import seaborn as sns
-import nltk 
-from sklearn.feature_extraction.text import CountVectorizer
 
+from data_utils import data_load
+from data_utils import get_batch
+from data_utils import get_target_list
+from data_utils import get_text_list
+from data_utils import process_element
+from data_utils import fast_iter
+from indexCNN import IndexClassCNN
+
+# Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
 
-def fast_iter(context, func, *args, **kwargs):
-  """
-  http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
-  See also http://effbot.org/zone/element-iterparse.htm
-  """
-  _, root = next(context)
-  start_tag = None
-  for event, elem in context:
-    if(start_tag is None and event == "start"):
-      start_tag = elem.tag
-      continue
-    # we are going to see if we can pull the entire pubmed article entry each time but then dump it after
-    if(elem.tag == start_tag and event == "end"):
-      func(elem, *args, **kwargs)
-      # Instead of calling clear on the element and all its children, we will just call it on the root.
-      start_tag = None
-      root.clear()
-  del context
+# Model Hyperparameters
+EMBEDDING_DIM = 128 # default 128
+FILTER_SIZES = "3,4,5"
+NUM_FILTERS= 128 # this is per filter size, default = 128
+L2_REG_LAMBDA=0.0 # L2 regularization lambda
+DROPOUT_KEEP_PROB=0.5
+
+# Training Parameters
+ALLOW_SOFT_PLACEMENT=True
+LOG_DEVICE_PLACEMENT=False
+NUM_CHECKPOINTS = 5
+BATCH_SIZE = 64 # default 64
+NUM_EPOCHS = 200
+EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set
+CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time
 
 
-def process_element(elem, output_list):
-  global empty_abs_counter
-  output_text = elem.find(".//AbstractText")
-  medline_cit_tag = elem.find(".//MedlineCitation")
-  if(output_text is not None):
-    output_list.append(
-    {"text": etree.tostring(output_text, method="text", with_tail=False, encoding='unicode'),
-     "target":medline_cit_tag.get("Status")
-     })
-  else:
-    empty_abstract = etree.Element("AbstractText")
-    empty_abstract.text = ""
-    output_list.append({"text": etree.tostring(empty_abstract), "target":medline_cit_tag.get("Status")})
-    empty_abs_counter += 1
+def train_CNN(X_train, Y_train, vocab_processor, X_test, Y_test):
+# Training, Yay!
+  print("x_train type: ", type(X_train))
+  print("y_train type: ", type(Y_train))
+  print("x_dev type: ", type(X_test))
+  print("y_dev type: ", type(Y_test))
+  print("\n\n\n")
+  print("x_train.shape: ", X_train.shape)
+  print("y_train.shape: ", Y_train.shape)
+  print("x_dev.shape: ", X_test.shape)
+  print("y_dev.shape: ", Y_test.shape)
 
-def get_text_list(dictList):
-  output_list = []
-  for text in dictList:
-    output_list.append(str(text['text']))
-  return output_list
-
-  # this returns 1s and 0s to save space and time, but don't call it a lot because of computation
-def get_target_list(dictList):
-  target_list = []
-  output_list = []
-  for text in dictList:
-    target_list.append(str(text['target']))
-
-  for text in target_list:
-    # print(text['target'])
-    if text == "MEDLINE":
-      output_list.append(1)
-    elif text == "PubMed-not-MEDLINE":
-      output_list.append(0)
+  with tf.Graph().as_default():
+    # TODO GPU: when this is eventually run on a GPU setup, this some of what we'd change.
+    session_conf = tf.ConfigProto(
+              allow_soft_placement=ALLOW_SOFT_PLACEMENT, # determines if op can be placed on CPU when GPU not avail
+              log_device_placement=LOG_DEVICE_PLACEMENT # whether device placements should be logged, we don't have any for CPU
+              )
+    sess = tf.Session(config=session_conf)
+    with sess.as_default():
+      cnn = IndexClassCNN(
+          sequence_length = X_train.shape[1],
+          num_classes = Y_train.shape[1],
+          vocab_size=len(vocab_processor.vocabulary_),
+          embedding_size=EMBEDDING_DIM,
+          filter_sizes=list(map(int, FILTER_SIZES.split(","))),
+          num_filters=NUM_FILTERS,
+          l2_reg_lambda=L2_REG_LAMBDA
+          )
       
-  print("output", output_list)
-  return output_list
+      # define the training procedure
+      global_step = tf.Variable(0,name="global_step", trainable=False)
+      optimizer = tf.train.AdamOptimizer(1e-3)
+      # list of tuples with (gradients, [for] variable)
+      grad_var_pairs = optimizer.compute_gradients(cnn.loss)
+      train_op = optimizer.apply_gradients(grad_var_pairs, global_step=global_step)
+      
+      # Keep track of the gradient values and sparsity (to see later)
+      grad_summaries = []
+      for gradient, var in grad_var_pairs:
+        if gradient is not None:
+          grad_hist_summary = tf.summary.histogram("{}/gradient/hist".format(var.name), gradient)
+          sparsity_summary = tf.summary.scalar("{}/gradient/sparsity".format(var.name), tf.nn.zero_fraction(gradient))
+          grad_summaries.append(grad_hist_summary)
+          grad_summaries.append(sparsity_summary)
+      grad_summaries_merged = tf.summary.merge(grad_summaries)
+          
+      # Output directory for models and summaries
+      timestamp = str(int(time.time()))
+      out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+      print("Writing to {}\n".format(out_dir))
+      
+      # Summaries for loss and accuracy
+      loss_summary = tf.summary.scalar("loss", cnn.loss)
+      accuracy_summary = tf.summary.scalar("accuracy", cnn.accuracy)
+      
+      # Training Summaries
+      train_summary_op = tf.summary.merge([loss_summary, accuracy_summary, grad_summaries_merged])
+      train_summary_dir = os.path.join(out_dir, "summaries", "train")
+      train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
+      
+      # Test Summaries
+      test_summary_op = tf.summary.merge([loss_summary, accuracy_summary])
+      test_summary_dir = os.path.join(out_dir, "summaries", "test")
+      test_summary_writer = tf.summary.FileWriter(test_summary_dir, sess.graph)
+      
+      # Checkpoint Directory. Used to store the model at checkpoints.
+      # Tensorflow assumes this already exists, so we'll make it here
+      checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+      checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+      if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+      saver = tf.train.Saver(tf.global_variables(), max_to_keep=NUM_CHECKPOINTS)
+      
+      # Save the vocabulary
+      vocab_processor.save(os.path.join(out_dir, "vocab"))
+      
+      # Initialize all vars to run model
+      sess.run(tf.global_variables_initializer())
+      
+      def train_step(x_batch, y_batch):
+        """
+        A single training step
+        """
+        feed_dict = {
+          cnn.input_x:x_batch,
+          cnn.input_y:y_batch,
+          cnn.dropout_keep_prob: DROPOUT_KEEP_PROB
+        }
+        
+        # we don't need the training op 
+        _, step, summaries, loss, accuracy = sess.run(
+            [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
+            feed_dict)
+        time_str = datetime.datetime.now().isoformat()
+        print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+        train_summary_writer.add_summary(summaries, step)
+        
+      def test_step(x_batch, y_batch, writer=None):
+        """
+        Evaluates model on a test set
+        """
+        feed_dict = {
+          cnn.input_x: x_batch,
+          cnn.input_y: y_batch,
+          cnn.dropout_keep_prob: 1.0
+        }
+        step, summaries, loss, accuracy = sess.run(
+            [global_step, test_summary_op, cnn.loss, cnn.accuracy],
+            feed_dict)
+        time_str = datetime.datetime.now().isoformat()
+        print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+        if writer:
+          writer.add_summary(summaries, step)
+     
+      # Generate batches
+      batches = get_batch(list(zip(X_train, Y_train)), BATCH_SIZE, NUM_EPOCHS)
+      
+      # Training loop. For each batch...
+      for batch in batches:
+        # turns out the * unpacks whatevers in batch
+        x_batch, y_batch = zip(*batch)
 
-  
-def data_load():
-  # we are timing the abstract text data pull
-  import time
-  start_time = time.time()
+        train_step(x_batch, y_batch)
+        current_step = tf.train.global_step(sess, global_step)
+        if current_step % EVALUATE_EVERY == 0:
+          print("\nEvaluation:")
+          test_step(X_test, Y_test, writer=test_summary_writer)
+        if current_step % CHECKPOINT_EVERY == 0:
+          # uses the global step number as part of the file name
+          path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+          print("Saved model checkpoint to {}\n".format(path))
+      
+      # we use the simple save for now. update if it becomes an issue. 
+      # make sure this is working right
+      final_model_dir = os.path.abspath(os.path.join(out_dir, "final"))
+      input_x, input_y = cnn.get_inputs()
+      output = cnn.get_outputs()
+      tf.saved_model.simple_save(
+              sess,
+              final_model_dir,
+              inputs={"input_x":input_x,
+                      "input_y":input_y},
+              outputs={"predictions":output}
+              )
 
-  with open(xml_file, "rb") as xmlf:
-    context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, process_element, text_list)
-    
-  end_time = time.time()
-  print("Total set size: " , len(text_list))
-  print("Number of Cits with Empty Abstract: ", empty_abs_counter)
-  print("Total execution time parsing: {}".format(end_time - start_time))
-  
-  # we want to shuffle the data first, so we have a good mix of positive and negative targets
-  np.random.shuffle(text_list)
-  
-  # then we will build the vocabulary
-  max_document_length = max([len(str(x['text']).split(" ")) for x in text_list])
-  count_vect = preprocessing.VocabularyProcessor(max_document_length)
-  X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
-  Y_targets = np.array(get_target_list(text_list))
+def main(argv=None):
+  # xml_file = "pubmed_result.xml"
+  xml_file = "small_data.xml"
+  text_list = []
 
-  # let's shuffle it some more, before we do the split, on the entire list
-  np.random.seed(15)
-  shuffle_indices = np.random.permutation(np.arange(len(Y_targets)))
-  X_vocab_vectors_shuffled = X_vocab_vectors[shuffle_indices]
-  Y_targets_shuffled = Y_targets[shuffle_indices]
+  X_vocab_vectors_shuffled, Y_targets_shuffled, vocab_processor = data_load(xml_file, text_list)    
   
   # now we'll split train/test set
   # TODO: will eventually have to replace this with cross-validation
   train_test_divide = math.floor(TRAIN_SET_PERCENTAGE * len(text_list))
   X_vocab_vect_train, X_vocab_vect_test = X_vocab_vectors_shuffled[:train_test_divide], X_vocab_vectors_shuffled[train_test_divide:]
   Y_target_train, Y_target_test = Y_targets_shuffled[:train_test_divide], Y_targets_shuffled[train_test_divide:]
+  print("shape: ", X_vocab_vect_train.shape)
+  del X_vocab_vectors_shuffled, Y_targets_shuffled
   
-  del X_vocab_vectors, Y_targets, X_vocab_vectors_shuffled, Y_targets_shuffled
-  
-  print("Vocabulary Size: {:d}".format(len(count_vect.vocabulary_)))
   print("Train/Dev split: {:d}/{:d}".format(len(Y_target_train), len(Y_target_test)))
-  return X_vocab_vect_train, Y_target_train, count_vect, X_vocab_vect_test, Y_target_test
-
-def train_CNN():
   
-  
-
-
+  train_CNN(X_vocab_vect_train, Y_target_train, vocab_processor, X_vocab_vect_test, Y_target_test)
+    
+      
 if __name__ == '__main__':
-  # xml_file = "cits.xml"
-  xml_file = "small_data.xml"
-  text_list = []
-  global empty_abs_counter
-  empty_abs_counter = 0
-
-  X_vocab_vect_train, Y_target_train, vocab_processor, X_vocab_vect_test, Y_target_test = data_load()    
-  train()
-  
+  tf.app.run(main=main)
