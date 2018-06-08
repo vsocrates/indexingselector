@@ -113,3 +113,6 @@ venv.bak/
 # we probably don't need the csv's either.
 *.csv
 *.tsv
+
+# don't include the output of the runs
+NN_work/runs/
