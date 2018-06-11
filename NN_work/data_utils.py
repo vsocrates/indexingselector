@@ -91,6 +91,13 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     count_vect = premade_vocab_processor
   count_vect = preprocessing.VocabularyProcessor(max_document_length)
   X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
+  vocab_dict = count_vect.vocabulary_._mapping
+  sorted_vocab = sorted(vocab_dict.items(), key = lambda x : x[1])
+  vocabulary = list(list(zip(*sorted_vocab))[0])
+  print("vocab1: ", vocab_dict)
+
+  print("vocab1: ", vocabulary)
+  print("xvectors: ", X_vocab_vectors[0:2])
   Y_targets = np.array(get_target_list(text_list))
 
   # let's shuffle it some more, before we do the split, on the entire list

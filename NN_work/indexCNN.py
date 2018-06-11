@@ -7,6 +7,8 @@ class IndexClassCNN(object):
   Uses an embedding layer, followed by a convolutional, max-pooling and softmax layer.
   
   shape(x) = [k, l, m, n] batch, row, column, channel? is this right?
+  
+  TODO: eventually switch to custom estimator probably.
   """
   def __init__(self,sequence_length, num_classes, vocab_size,
       embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
