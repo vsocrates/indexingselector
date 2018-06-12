@@ -3,21 +3,9 @@ import math
 import lxml.etree as etree
 import numpy as np
 
-# from tensorflow.contrib.learn import preprocessing
 from nltk import word_tokenize
 
 from vocab import VocabProcessor
-
-# import tensorflow as tf
-# import tensorflow_hub as hub
-# from tensorflow.contrib.learn import preprocessing
-# import os
- 
-# import re
-# import math
-# import seaborn as sns
-# import nltk 
-# from sklearn.feature_extraction.text import CountVectorizer
 
 def fast_iter(context, func, *args, **kwargs):
   """
@@ -96,14 +84,15 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
   count_vect = VocabProcessor(word_tokenize)
   # X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
   dataset = count_vect.prepare_data(text_list)
-    
-  vocab_dict = count_vect.vocab
+  print("dataset no way!!!: ", dataset)
+  
+  vocab_dict = count_vect.vocabulary_._mapping
   sorted_vocab = sorted(vocab_dict.items(), key = lambda x : x[1])
   vocabulary = list(list(zip(*sorted_vocab))[0])
-  # print("vocab1: ", vocab_dict)
+  print("vocab1: ", vocab_dict)
 
-  # print("vocab1: ", vocabulary)
-  # print("xvectors: ", X_vocab_vectors[0:2])
+  print("vocab1: ", vocabulary)
+  print("xvectors: ", X_vocab_vectors[0:2])
   Y_targets = np.array(get_target_list(text_list))
 
   # let's shuffle it some more, before we do the split, on the entire list

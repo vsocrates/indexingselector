@@ -1,4 +1,14 @@
+from collections import defaultdict
+from collections import Counter 
+
+import numpy as np
+
 import tensorflow as tf
+from tensorflow.python.keras.preprocessing import sequence
+
+PAD = "<PAD>"
+START = "<START>"
+EOS = "<EOS>"
 
 class VocabProcessor:
   
@@ -15,7 +25,6 @@ class VocabProcessor:
   def next_value(self):
       self.next += 1
       return self.next
-    
   
   """
     I don't know if this is the right move, but take in data of the form of a list of dict:
@@ -31,33 +40,43 @@ class VocabProcessor:
       vocab: the vocabulary
       sequence_ex_list: the Dataset taken from from_tensor_slices containing all data per training example
   """
-  def prepare_data(doc_data_list, save_records=False):
+  def prepare_data(self, doc_data_list, save_records=False):
     # first we want to split up the text in all the docs and make the vocab
     all_word_id_list = []
     labels = []
+    max_doc_length = 0 
     for idx, doc in enumerate(doc_data_list):
-      print("Preparing doc number %d" % idx)
-      tokens = tokenize(doc['text'])
-      word_id_list = tokens_to_id_list(tokens)
+      # print("Preparing doc number %d" % idx)
+      tokens = self.tokenize(str(doc['text']))
+      word_id_list = self.tokens_to_id_list(tokens)      
+      if len(word_id_list) > max_doc_length:
+        max_doc_length = len(word_id_list)
       all_word_id_list.append(word_id_list)
       labels.append(doc['target'])
       
-    dataset = tf.data.Dataset.from_tensor_slices((all_word_id_list, labels))
-    print(self.vocab)
+    # we are adding start and end tags
+    for doc in all_word_id_list:
+      doc.insert(0, 1)
+      doc.append(2)
+      
+    # here we're padding the words to match the longest abstract text
+    output_arr = sequence.pad_sequences(all_word_id_list, padding="post", value=0)
+    dataset = tf.data.Dataset.from_tensor_slices((output_arr, labels))
+    # print(self.vocab)
     return dataset
+
+
+
   """
     Expects this passed as a list of documents in memory. If not, we need to come up with a different way to read in all these docs
   """
   def fit():
-    
+    pass
   """
     This one is going to convert the documents into word-id matrices (which are each just a list)
   """
   def transform():
-
-  def next_value(self):
-      self.next += 1
-      return self.next
+    pass
 
   def sequence_to_tf_example(self, sequence):
       '''

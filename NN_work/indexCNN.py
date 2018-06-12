@@ -93,7 +93,7 @@ class IndexClassCNN(object):
       self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
       
       
-    # Accurac calculation
+    # Accuracy calculation
     with tf.name_scope("accuracy"):
       correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
       self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
