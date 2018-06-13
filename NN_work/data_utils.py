@@ -3,21 +3,10 @@ import math
 import lxml.etree as etree
 import numpy as np
 
-# from tensorflow.contrib.learn import preprocessing
 from nltk import word_tokenize
 
 from vocab import VocabProcessor
 
-# import tensorflow as tf
-# import tensorflow_hub as hub
-# from tensorflow.contrib.learn import preprocessing
-# import os
- 
-# import re
-# import math
-# import seaborn as sns
-# import nltk 
-# from sklearn.feature_extraction.text import CountVectorizer
 
 def fast_iter(context, func, *args, **kwargs):
   """
@@ -87,35 +76,16 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
   # we want to shuffle the data first, so we have a good mix of positive and negative targets
   np.random.shuffle(text_list)
   
-  # then we will build the vocabulary
-  max_document_length = max([len(str(x['text']).split(" ")) for x in text_list])
   count_vect = None
   if premade_vocab_processor is not None:
     count_vect = premade_vocab_processor
   
   count_vect = VocabProcessor(word_tokenize)
-  # X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
-  dataset = count_vect.prepare_data(text_list)
+  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data(text_list)
     
-  vocab_dict = count_vect.vocab
-  sorted_vocab = sorted(vocab_dict.items(), key = lambda x : x[1])
-  vocabulary = list(list(zip(*sorted_vocab))[0])
-  # print("vocab1: ", vocab_dict)
-
-  # print("vocab1: ", vocabulary)
-  # print("xvectors: ", X_vocab_vectors[0:2])
-  Y_targets = np.array(get_target_list(text_list))
-
-  # let's shuffle it some more, before we do the split, on the entire list
-  np.random.seed(15)
-  shuffle_indices = np.random.permutation(np.arange(len(Y_targets)))
-  X_vocab_vectors_shuffled = X_vocab_vectors[shuffle_indices]
-  Y_targets_shuffled = Y_targets[shuffle_indices]
-  print("Vocabulary Size: {:d}".format(len(count_vect.vocabulary_)))
+  print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
-  del X_vocab_vectors, Y_targets 
-
-  return X_vocab_vectors_shuffled, Y_targets_shuffled, count_vect
+  return train_dataset, test_dataset, count_vect, max_doc_length
   
   
 def get_batch(data, batch_size, num_epochs, shuffle=True):

@@ -4,7 +4,10 @@ from collections import Counter
 import numpy as np
 
 import tensorflow as tf
+
 from tensorflow.python.keras.preprocessing import sequence
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 PAD = "<PAD>"
 START = "<START>"
@@ -52,18 +55,39 @@ class VocabProcessor:
       if len(word_id_list) > max_doc_length:
         max_doc_length = len(word_id_list)
       all_word_id_list.append(word_id_list)
-      labels.append(doc['target'])
+      
+      # add to labels
+      if doc['target'] == "MEDLINE":
+        labels.append([1])
+      elif doc['target'] == "PubMed-not-MEDLINE":
+        labels.append([0])
       
     # we are adding start and end tags
     for doc in all_word_id_list:
       doc.insert(0, 1)
       doc.append(2)
-      
+     
+    # # we'll randomize the data and create train and test datasets here: 
+    # all_word_id_list, labels = shuffle(all_word_id_list, labels)
+    
     # here we're padding the words to match the longest abstract text
-    output_arr = sequence.pad_sequences(all_word_id_list, padding="post", value=0)
-    dataset = tf.data.Dataset.from_tensor_slices((output_arr, labels))
-    # print(self.vocab)
-    return dataset
+    # output_arr = sequence.pad_sequences(all_word_id_list, padding="post", value=0)
+    
+    # now we'll split train/test set
+    # TODO: will eventually have to replace this with cross-validation
+    X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
+  
+    print("Type: ", X_test[0])
+    train_dataset = tf.data.Dataset.from_generator( lambda: (X_train, Y_train), (tf.int32, tf.int32), (tf.TensorShape([len(X_train), None]), tf.TensorShape([len(Y_train),1])) )
+    test_dataset = tf.data.Dataset.from_generator(lambda: (X_test, Y_test), (tf.int32, tf.int32), 
+        (tf.TensorShape([len(X_test), None]), tf.TensorShape([len(Y_test),1])) )
+    print(train_dataset)
+    print(test_dataset)
+  
+    # TODO: this is for if we want to map backwards, which we can do later.
+    # this.update_reverse_vocab()
+
+    return train_dataset, test_dataset, max_doc_length
 
 
 
@@ -77,32 +101,6 @@ class VocabProcessor:
   """
   def transform():
     pass
-
-  def sequence_to_tf_example(self, sequence):
-      '''
-      Gets a sequence (a text like "hello how are you") and returns a a SequenceExample
-      :param sequence: Some text
-      :return: A A sequence exmaple
-      '''
-      # Convert the text to a list of ids
-      id_list = self.sentence_to_id_list(sequence)
-      ex = tf.train.SequenceExample()
-      # A non-sequential feature of our example
-      sequence_length = len(id_list) + 2  # For start and end
-      # Add the context feature, here we just need length
-      ex.context.feature["length"].int64_list.value.append(sequence_length)
-      # Feature lists for the two sequential features of our example
-      # Add the tokens. This is the core sequence.
-      # You can add another sequence in the feature_list dictionary, for translation for instance
-      fl_tokens = ex.feature_lists.feature_list["tokens"]
-      # Prepend with start token
-      fl_tokens.feature.add().int64_list.value.append(self.vocab[START])
-      for token in id_list:
-          # Add those tokens one by one
-          fl_tokens.feature.add().int64_list.value.append(token)
-      # apend  with end token
-      fl_tokens.feature.add().int64_list.value.append(self.vocab[EOS])
-      return ex
 
   def ids_to_string(self, tokens, length=None):
       string = ''.join([self.reverse_vocab[x] for x in tokens[:length]])

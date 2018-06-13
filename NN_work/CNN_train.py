@@ -39,17 +39,10 @@ EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set
 CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time
 
 
-def train_CNN(X_train, Y_train, vocab_processor, X_test, Y_test):
+def train_CNN(train_dataset, test_dataset, vocab_processor):
 # Training, Yay!
-  print("x_train type: ", type(X_train))
-  print("y_train type: ", type(Y_train))
-  print("x_dev type: ", type(X_test))
-  print("y_dev type: ", type(Y_test))
-  print("\n\n\n")
-  print("x_train.shape: ", X_train.shape)
-  print("y_train.shape: ", Y_train.shape)
-  print("x_dev.shape: ", X_test.shape)
-  print("y_dev.shape: ", Y_test.shape)
+  print("x_train type: ", type(train_dataset))
+  print("y_train type: ", type(test_dataset))
 
   with tf.Graph().as_default():
     # TODO GPU: when this is eventually run on a GPU setup, this some of what we'd change.
@@ -60,9 +53,9 @@ def train_CNN(X_train, Y_train, vocab_processor, X_test, Y_test):
     sess = tf.Session(config=session_conf)
     with sess.as_default():
       cnn = IndexClassCNN(
-          sequence_length = X_train.shape[1],
-          num_classes = Y_train.shape[1],
-          vocab_size=len(vocab_processor.vocabulary_),
+          sequence_length = max_doc_length,
+          num_classes = 1,
+          vocab_size=len(vocab_processor.vocab),
           embedding_size=EMBEDDING_DIM,
           filter_sizes=list(map(int, FILTER_SIZES.split(","))),
           num_filters=NUM_FILTERS,
@@ -129,7 +122,7 @@ def train_CNN(X_train, Y_train, vocab_processor, X_test, Y_test):
           cnn.dropout_keep_prob: DROPOUT_KEEP_PROB
         }
         
-        # we don't need the training op 
+        # we don't need the training op back
         _, step, summaries, loss, accuracy = sess.run(
             [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
             feed_dict)
@@ -190,19 +183,12 @@ def main(argv=None):
   xml_file = "small_data.xml"
   text_list = []
 
-  X_vocab_vectors_shuffled, Y_targets_shuffled, vocab_processor = data_load(xml_file, text_list)    
+  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
+  print("HELO MEP: ", train_dataset.output_shapes)
+  # padded_train_dataset = train_dataset.padded_batch(4, padded_shapes=([None],[None]))
+  # padded_test_dataset = test_dataset.padded_batch(4, padded_shapes=([None],[None]))
   
-  # now we'll split train/test set
-  # TODO: will eventually have to replace this with cross-validation
-  train_test_divide = math.floor(TRAIN_SET_PERCENTAGE * len(text_list))
-  X_vocab_vect_train, X_vocab_vect_test = X_vocab_vectors_shuffled[:train_test_divide], X_vocab_vectors_shuffled[train_test_divide:]
-  Y_target_train, Y_target_test = Y_targets_shuffled[:train_test_divide], Y_targets_shuffled[train_test_divide:]
-  print("shape: ", X_vocab_vect_train.shape)
-  del X_vocab_vectors_shuffled, Y_targets_shuffled
-  
-  print("Train/Dev split: {:d}/{:d}".format(len(Y_target_train), len(Y_target_test)))
-  
-  train_CNN(X_vocab_vect_train, Y_target_train, vocab_processor, X_vocab_vect_test, Y_target_test)
+  train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length)
     
       
 if __name__ == '__main__':

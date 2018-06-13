@@ -14,7 +14,7 @@ class IndexClassCNN(object):
       embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
     print("num class: ", num_classes)
     self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-    self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
+    self.input_y = tf.placeholder(tf.float32, [None, num_classes - 1], name="input_y")
     
     self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
     
@@ -23,7 +23,8 @@ class IndexClassCNN(object):
     
     # Embedding layer (input)
     # TODO GPU: eventually needs to be changed
-    with tf.device("/cpu:0"), tf.name_scope("embedding"):
+    # with tf.device("/cpu:0"), tf.name_scope("embedding"):
+    with tf.name_scope("embedding"):
       self.words = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0,1.0, name="words"))
       
       print("words shape: ", self.words.get_shape().as_list())
