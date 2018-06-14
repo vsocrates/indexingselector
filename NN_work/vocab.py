@@ -1,17 +1,26 @@
 from collections import defaultdict
 from collections import Counter 
+import pickle
+import itertools 
 
-import numpy as np
-
+try:
+  # pylint: disable=g-import-not-at-top
+  import cPickle as pickle
+except ImportError:
+  # pylint: disable=g-import-not-at-top
+  import pickle
+  
 import tensorflow as tf
-
 from tensorflow.python.keras.preprocessing import sequence
+from tensorflow.python.platform import gfile
+
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
 PAD = "<PAD>"
 START = "<START>"
 EOS = "<EOS>"
+BATCH_SIZE = 64 # default 64
 
 class VocabProcessor:
   
@@ -58,15 +67,18 @@ class VocabProcessor:
       
       # add to labels
       if doc['target'] == "MEDLINE":
-        labels.append([1])
+        labels.append([0,1])
       elif doc['target'] == "PubMed-not-MEDLINE":
-        labels.append([0])
+        labels.append([1,0])
       
     # we are adding start and end tags
     for doc in all_word_id_list:
       doc.insert(0, 1)
       doc.append(2)
-     
+      
+    # We have to do this here, because we just added two elements to each list, max increased by two
+    max_doc_length += 2
+    
     # # we'll randomize the data and create train and test datasets here: 
     # all_word_id_list, labels = shuffle(all_word_id_list, labels)
     
@@ -76,18 +88,57 @@ class VocabProcessor:
     # now we'll split train/test set
     # TODO: will eventually have to replace this with cross-validation
     X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
-  
-    print("Type: ", X_test[0])
-    train_dataset = tf.data.Dataset.from_generator( lambda: (X_train, Y_train), (tf.int32, tf.int32), (tf.TensorShape([len(X_train), None]), tf.TensorShape([len(Y_train),1])) )
-    test_dataset = tf.data.Dataset.from_generator(lambda: (X_test, Y_test), (tf.int32, tf.int32), 
-        (tf.TensorShape([len(X_test), None]), tf.TensorShape([len(Y_test),1])) )
+
+    train_tuple = zip(X_train, Y_train)
+    test_tuple = zip(X_test, Y_test)
+    # print("First shape test: ", X_train[0])
+    # print("Second shape test: ", Y_train[0])
+    def train_generator():
+      while True:
+        # print("RESTART!!!?")
+        train_tuple = zip(X_train, Y_train)
+        data_iter = iter(train_tuple)
+        for x, y in data_iter:
+          # print("Y DATA: ", y)
+          yield x, y
+        # print("OUT OF DATA!!! ")
+        
+
+    def test_generator():
+      # while True:
+      for x, y in test_tuple:
+        yield x, y
+          
+    # print("X_train: ", X_train)
+    # print("Type: ", X_test[0])
+      
+    # We are deciding to make them all the same length, as opposed to based on batch. 
+    # TODO: look into if this is the right thing to do for CNN
+    train_dataset = tf.data.Dataset.from_generator(train_generator,
+                                           output_types= (tf.int32, tf.int32),
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+                                           
+    test_dataset = tf.data.Dataset.from_generator(test_generator,
+                                           output_types= (tf.int32, tf.int32),
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+    
+    print("before batching: ", train_dataset)
+    
+    batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length], [2])).                          repeat()
+    batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length],[2])).                          repeat()
+
+    # print("after batching: ", batched_train_dataset)
+
+    # train_dataset = tf.data.Dataset.from_generator( lambda: (X_train, Y_train), (tf.int32, tf.int32), (tf.TensorShape([None, None]), tf.TensorShape([None,1])) )
+    # test_dataset = tf.data.Dataset.from_generator(lambda: (X_test, Y_test), (tf.int32, tf.int32), 
+        # (tf.TensorShape([None, None]), tf.TensorShape([None,1])) )
     print(train_dataset)
     print(test_dataset)
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
 
-    return train_dataset, test_dataset, max_doc_length
+    return batched_train_dataset, batched_test_dataset, max_doc_length
 
 
 
@@ -137,6 +188,25 @@ class VocabProcessor:
   def id_list_to_text(self, id_list):
       tokens = ''.join(map(lambda x: self.reverse_vocab[x], id_list))
       return tokens  
+  
+  def save(self, filename):
+    """Saves vocabulary processor into given file.
+    Args:
+      filename: Path to output file.
+    """
+    with gfile.Open(filename, 'wb') as f:
+      f.write(pickle.dumps(self))
+
+  @classmethod
+  def restore(cls, filename):
+    """Restores vocabulary processor from given file.
+    Args:
+      filename: Path to file to load from.
+    Returns:
+      VocabularyProcessor object.
+    """
+    with gfile.Open(filename, 'rb') as f:
+      return pickle.loads(f.read())
   
   # we are not going to convert to tfrecord right now. if we want to save files after, implement this above.
   

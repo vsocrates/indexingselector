@@ -56,9 +56,9 @@ def get_target_list(dictList):
   for text in target_list:
     # print(text['target'])
     if text == "MEDLINE":
-      output_list.append([1,0])
-    elif text == "PubMed-not-MEDLINE":
       output_list.append([0,1])
+    elif text == "PubMed-not-MEDLINE":
+      output_list.append([1,0])
   return output_list
 
 def data_load(xml_file, text_list, premade_vocab_processor=None):
@@ -70,8 +70,8 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     fast_iter(context, get_abstract_text_with_targets, text_list)
     
   end_time = time.time()
-  print("Total set size: " , len(text_list))
-  print("Total execution time parsing: {}".format(end_time - start_time))
+  # print("Total set size: " , len(text_list))
+  # print("Total execution time parsing: {}".format(end_time - start_time))
   
   # we want to shuffle the data first, so we have a good mix of positive and negative targets
   np.random.shuffle(text_list)
@@ -83,7 +83,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
   count_vect = VocabProcessor(word_tokenize)
   train_dataset, test_dataset, max_doc_length = count_vect.prepare_data(text_list)
     
-  print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
+  # print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
   return train_dataset, test_dataset, count_vect, max_doc_length
   

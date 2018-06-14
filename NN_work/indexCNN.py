@@ -10,14 +10,15 @@ class IndexClassCNN(object):
   
   TODO: eventually switch to custom estimator probably.
   """
-  def __init__(self,sequence_length, num_classes, vocab_size,
+  def __init__(self, input_x, input_y, dropout, sequence_length, num_classes, vocab_size,
       embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
-    print("num class: ", num_classes)
-    self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-    self.input_y = tf.placeholder(tf.float32, [None, num_classes - 1], name="input_y")
+    # print("num class: ", num_classes)
+    self.input_x = input_x#tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
+    self.input_y = input_y#tf.placeholder(tf.int32, [None, num_classes - 1], name="input_y")
     
-    self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
+    self.dropout_keep_prob = dropout#tf.placeholder(tf.float32, name="dropout_keep_prob")
     
+    print("Inside CNN," , self.input_x)
     # we keep track of the l2 regularization loss
     l2_loss = tf.constant(0.0)
     
@@ -25,14 +26,14 @@ class IndexClassCNN(object):
     # TODO GPU: eventually needs to be changed
     # with tf.device("/cpu:0"), tf.name_scope("embedding"):
     with tf.name_scope("embedding"):
-      self.words = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0,1.0, name="words"))
+      self.words = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0,1.0), name="words")
       
-      print("words shape: ", self.words.get_shape().as_list())
-      print("input_x shape: ", self.input_x.get_shape().as_list())
+      # print("words shape: ", self.words.get_shape().as_list())
       self.embedded_chars = tf.nn.embedding_lookup(self.words, self.input_x)
-      print("embedded chars size: ", self.input_x.get_shape().as_list())
+      # print("embedded chars size: ", self.embedded_chars.get_shape().as_list())
       self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)  
-      
+      print("embedded_chars_expanded chars size: ", self.embedded_chars_expanded.get_shape().as_list())
+
       
     # convolution and maxpool later per filter size
     pooled_outputs = []
@@ -41,7 +42,7 @@ class IndexClassCNN(object):
         #Convolution layer
         filter_shape = [filter_size, embedding_size, 1, num_filters]
         filter = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="filter")
-        print("Filter shape, sanity check: ", filter.get_shape().as_list())
+        # print("Filter shape, sanity check: ", filter.get_shape().as_list())
         bias = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="bias")
         
         conv = tf.nn.conv2d(
@@ -90,6 +91,8 @@ class IndexClassCNN(object):
     
     # calculate mean cross-entropy loss
     with tf.name_scope("loss"):
+      print("input into logits1: ", self.scores)
+      print("input into logits2: ", self.input_y)
       losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
       self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
       
