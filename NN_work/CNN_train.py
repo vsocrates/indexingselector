@@ -38,11 +38,8 @@ NUM_EPOCHS = 20 # default 200
 EVALUATE_EVERY = 10 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 10 # Save the model after this many steps, every time
 
-# If this works, remember, these datasets below are already padded and batched
+# TODO: rename vars, Remember, these datasets below are already padded and batched
 def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
-# Training, Yay!
-  # print("x_train type: ", type(train_dataset))
-  # print("y_train type: ", type(test_dataset))
 
   # TODO GPU: when this is eventually run on a GPU setup, this some of what we'd change.
   session_conf = tf.ConfigProto(
@@ -52,20 +49,9 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
             )
   sess = tf.Session(config=session_conf)
   with sess.as_default():
-    # Generate batches
-    # batches = get_batch(list(zip(X_train, Y_train)), BATCH_SIZE, NUM_EPOCHS)
-    # batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=[None])
-    # batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=[None])
-
-    # train_itr = batched_train_dataset.make_initializable_iterator()
-    # test_itr = batched_test_dataset.make_initializable_iterator()
     
-    # sess.run(train_itr.initializer())
-    # sess.run(test_itr.initializer())
-    print("heLP: ",train_dataset)
-    # batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=([None, None], [None]))
-    # batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=([None, None], [None]))
-
+    # We have to make the iterator here since we want to initialize the IndexClassCNN class and don't use   placeholders anymore
+    # However, they are immediately reset when we actually do the training
     iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
                                          train_dataset.output_shapes)
                                          
@@ -73,10 +59,8 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
     test_init_op = iterator.make_initializer(test_dataset)
 
     sess.run(train_init_op)
-    # getnext = iterator.get_next()
     input_x, input_y = iterator.get_next()
-    # print("Input X before CNN develoP: ", input_x.eval())
-    # print("Input Y before CNN develoP: ", input_y.eval())
+
     cnn = IndexClassCNN(
         input_x,
         input_y,
@@ -136,11 +120,6 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
     
     # Save the vocabulary
     vocab_processor.save(os.path.join(out_dir, "vocab"))
-    # print("eyyyyy: 1", sess.run(getnext))
-    # print("eyyyyy: 2", sess.run(getnext))
-    # print("eyyyyy: 3", sess.run(getnext))
-    # print("eyyyyy: 4", sess.run(getnext))
-    # print("eyyyyy: 5", sess.run(getnext))
     
     # Initialize all vars to run model
     sess.run(tf.global_variables_initializer())
@@ -149,18 +128,14 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
       """
       A single training step
       """
-      # print("inside the first training steP:!!!!: ", x_batch) 
-      # print("inside the first training steP:!!!!: ", y_batch) 
       cnn.input_x, cnn.input_y = x_batch, y_batch
       cnn.dropout_keep_prob: DROPOUT_KEEP_PROB
       output = sess.run(x_batch)
-      # print("OUTPUT: ", output)
-      # we don't need the training op back
-          # print("THIS IS HWHERE WE CRASH:")
-
+      
+      # training op doesn't return anything
       _, step, summaries, loss, accuracy = sess.run(
           [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy])
-      print("BUT BEFORE THAT! : ", loss)
+
       time_str = datetime.datetime.now().isoformat()
       print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
       train_summary_writer.add_summary(summaries, step)
@@ -185,6 +160,7 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
       input_x, input_y = iterator.get_next()
       train_step(input_x, input_y)
       current_step = tf.train.global_step(sess, global_step)
+      
       if current_step % EVALUATE_EVERY == 0:
         print("\nEvaluation:")
         sess.run(test_init_op)
@@ -193,15 +169,15 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
           try:
             test_step(test_x,test_y, writer=test_summary_writer)
           except tf.errors.OutOfRangeError:
-            print("We broke outta there!")
             break
+            
       if current_step % CHECKPOINT_EVERY == 0:
         # uses the global step number as part of the file name
         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
         print("Saved model checkpoint to {}\n".format(path))
     
     # we use the simple save for now. update if it becomes an issue. 
-    # make sure this is working right
+    # TODO: make sure this is working right
     final_model_dir = os.path.abspath(os.path.join(out_dir, "final"))
     input_x, input_y = cnn.get_inputs()
     output = cnn.get_outputs()
@@ -219,10 +195,6 @@ def main(argv=None):
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
-  # print("HELO MEP: ", train_dataset.output_shapes)
-  # padded_train_dataset = train_dataset.padded_batch(4, padded_shapes=([None],[None]))
-  # padded_test_dataset = test_dataset.padded_batch(4, padded_shapes=([None],[None]))
-  
   train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length)
     
       

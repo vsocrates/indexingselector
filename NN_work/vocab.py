@@ -1,3 +1,5 @@
+# Heavily influenced by https://github.com/LightTag/BibSample/blob/master/preppy.py
+
 from collections import defaultdict
 from collections import Counter 
 import pickle
@@ -57,15 +59,16 @@ class VocabProcessor:
     all_word_id_list = []
     labels = []
     max_doc_length = 0 
+    
+    # these methods do that using defaultdict, so that we can automatically add newly found tokens
     for idx, doc in enumerate(doc_data_list):
-      # print("Preparing doc number %d" % idx)
       tokens = self.tokenize(str(doc['text']))
       word_id_list = self.tokens_to_id_list(tokens)      
       if len(word_id_list) > max_doc_length:
         max_doc_length = len(word_id_list)
       all_word_id_list.append(word_id_list)
       
-      # add to labels
+      # add numeric labels
       if doc['target'] == "MEDLINE":
         labels.append([0,1])
       elif doc['target'] == "PubMed-not-MEDLINE":
@@ -79,41 +82,31 @@ class VocabProcessor:
     # We have to do this here, because we just added two elements to each list, max increased by two
     max_doc_length += 2
     
-    # # we'll randomize the data and create train and test datasets here: 
-    # all_word_id_list, labels = shuffle(all_word_id_list, labels)
-    
-    # here we're padding the words to match the longest abstract text
-    # output_arr = sequence.pad_sequences(all_word_id_list, padding="post", value=0)
     
     # now we'll split train/test set
     # TODO: will eventually have to replace this with cross-validation
+
+    # we'll randomize the data and create train and test datasets using scikit here: 
     X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
 
     train_tuple = zip(X_train, Y_train)
     test_tuple = zip(X_test, Y_test)
-    # print("First shape test: ", X_train[0])
-    # print("Second shape test: ", Y_train[0])
+  
+    # these are the generators used to create the datasets
     def train_generator():
+      # this one needs to run as long as we have more epochs
       while True:
-        # print("RESTART!!!?")
         train_tuple = zip(X_train, Y_train)
         data_iter = iter(train_tuple)
         for x, y in data_iter:
-          # print("Y DATA: ", y)
           yield x, y
-        # print("OUT OF DATA!!! ")
-        
-
+    
+    # the test generator is reinitialized every time its used, so no need for infinite loop
     def test_generator():
-      # while True:
       for x, y in test_tuple:
         yield x, y
-          
-    # print("X_train: ", X_train)
-    # print("Type: ", X_test[0])
-      
-    # We are deciding to make them all the same length, as opposed to based on batch. 
-    # TODO: look into if this is the right thing to do for CNN
+
+        
     train_dataset = tf.data.Dataset.from_generator(train_generator,
                                            output_types= (tf.int32, tf.int32),
                                            output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
@@ -122,18 +115,10 @@ class VocabProcessor:
                                            output_types= (tf.int32, tf.int32),
                                            output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
     
-    print("before batching: ", train_dataset)
-    
+    # We are deciding to make them all the same length, as opposed to pad based on batch. 
+    # TODO: look into if this is the right thing to do for CNN    
     batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length], [2])).                          repeat()
     batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length],[2])).                          repeat()
-
-    # print("after batching: ", batched_train_dataset)
-
-    # train_dataset = tf.data.Dataset.from_generator( lambda: (X_train, Y_train), (tf.int32, tf.int32), (tf.TensorShape([None, None]), tf.TensorShape([None,1])) )
-    # test_dataset = tf.data.Dataset.from_generator(lambda: (X_test, Y_test), (tf.int32, tf.int32), 
-        # (tf.TensorShape([None, None]), tf.TensorShape([None,1])) )
-    print(train_dataset)
-    print(test_dataset)
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
