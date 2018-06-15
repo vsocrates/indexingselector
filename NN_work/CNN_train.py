@@ -191,7 +191,8 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
 
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
-  xml_file = "small_data.xml"
+  # xml_file = "small_data.xml"
+  xml_file = "cits.xml"
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)

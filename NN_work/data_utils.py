@@ -70,6 +70,9 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     fast_iter(context, get_abstract_text_with_targets, text_list)
     
   end_time = time.time()
+  
+  print("Parsing took: --- %s seconds ---" % (end_time - start_time))
+  
   np.random.shuffle(text_list)
   
   count_vect = None
