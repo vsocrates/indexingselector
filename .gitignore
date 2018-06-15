@@ -116,3 +116,6 @@ venv.bak/
 
 # don't include the output of the runs
 NN_work/runs/
+
+# don't want those word2vec binaries
+*.bin
