@@ -37,6 +37,7 @@ BATCH_SIZE = 64 # default 64
 NUM_EPOCHS = 20 # default 200
 EVALUATE_EVERY = 10 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 10 # Save the model after this many steps, every time
+PRETRAINED_W2V = True
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
 def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
@@ -123,6 +124,33 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
     
     # Initialize all vars to run model
     sess.run(tf.global_variables_initializer())
+    
+    if FLAGS.word2vec:
+        # initial matrix with random uniform
+        initW = np.random.uniform(-0.25,0.25,(len(vocab_processor.vocabulary_), FLAGS.embedding_dim))
+        # load any vectors from the word2vec
+        print("Load word2vec file {}\n".format(FLAGS.word2vec))
+        with open(FLAGS.word2vec, "rb") as f:
+            header = f.readline()
+            vocab_size, layer1_size = map(int, header.split())
+            binary_len = np.dtype('float32').itemsize * layer1_size
+            for line in xrange(vocab_size):
+                word = []
+                while True:
+                    ch = f.read(1)
+                    if ch == ' ':
+                        word = ''.join(word)
+                        break
+                    if ch != '\n':
+                        word.append(ch)   
+                idx = vocab_processor.vocabulary_.get(word)
+                if idx != 0:
+                    initW[idx] = np.fromstring(f.read(binary_len), dtype='float32')  
+                else:
+                    f.read(binary_len)    
+
+        sess.run(cnn.W.assign(initW))
+    
     
     def train_step(x_batch, y_batch):
       """
