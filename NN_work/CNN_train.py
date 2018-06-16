@@ -15,6 +15,11 @@ import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow.contrib.learn import preprocessing
 
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
+
+import gensim
+
 from data_utils import data_load
 from data_utils import get_batch
 from indexCNN import IndexClassCNN
@@ -23,7 +28,7 @@ from indexCNN import IndexClassCNN
 TRAIN_SET_PERCENTAGE = 0.9
 
 # Model Hyperparameters
-EMBEDDING_DIM = 128 # default 128
+EMBEDDING_DIM = 200 # default 128
 FILTER_SIZES = "3,4,5"
 NUM_FILTERS= 128 # this is per filter size; default = 128
 L2_REG_LAMBDA=0.0 # L2 regularization lambda
@@ -37,10 +42,15 @@ BATCH_SIZE = 64 # default 64
 NUM_EPOCHS = 20 # default 200
 EVALUATE_EVERY = 10 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 10 # Save the model after this many steps, every time
-PRETRAINED_W2V = True
+PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
-def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
+def train_CNN(train_dataset,
+              test_dataset,
+              vocab_processor,
+              max_doc_length,
+              model=None,
+              embedding_model_length=0):
 
   # TODO GPU: when this is eventually run on a GPU setup, this some of what we'd change.
   session_conf = tf.ConfigProto(
@@ -61,7 +71,7 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
 
     sess.run(train_init_op)
     input_x, input_y = iterator.get_next()
-
+  
     cnn = IndexClassCNN(
         input_x,
         input_y,
@@ -72,9 +82,11 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
         embedding_size=EMBEDDING_DIM,
         filter_sizes=list(map(int, FILTER_SIZES.split(","))),
         num_filters=NUM_FILTERS,
+        embedding_model_length=embedding_model_length,
         l2_reg_lambda=L2_REG_LAMBDA
         )
-    
+
+
     # define the training procedure
     global_step = tf.Variable(0,name="global_step", trainable=False)
     optimizer = tf.train.AdamOptimizer(1e-3)
@@ -125,32 +137,16 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
     # Initialize all vars to run model
     sess.run(tf.global_variables_initializer())
     
-    if FLAGS.word2vec:
-        # initial matrix with random uniform
-        initW = np.random.uniform(-0.25,0.25,(len(vocab_processor.vocabulary_), FLAGS.embedding_dim))
-        # load any vectors from the word2vec
-        print("Load word2vec file {}\n".format(FLAGS.word2vec))
-        with open(FLAGS.word2vec, "rb") as f:
-            header = f.readline()
-            vocab_size, layer1_size = map(int, header.split())
-            binary_len = np.dtype('float32').itemsize * layer1_size
-            for line in xrange(vocab_size):
-                word = []
-                while True:
-                    ch = f.read(1)
-                    if ch == ' ':
-                        word = ''.join(word)
-                        break
-                    if ch != '\n':
-                        word.append(ch)   
-                idx = vocab_processor.vocabulary_.get(word)
-                if idx != 0:
-                    initW[idx] = np.fromstring(f.read(binary_len), dtype='float32')  
-                else:
-                    f.read(binary_len)    
-
-        sess.run(cnn.W.assign(initW))
+    # if model is not None:
+      # print("made it here1:")
     
+    # set up if we have an embedding already
+    embedding_placeholder = tf.placeholder(tf.float32, [embedding_model_length, EMBEDDING_DIM])
+    embedding_init = cnn.words.assign(embedding_placeholder)    
+    sess.run(embedding_init, feed_dict={embedding_placeholder:model})
+    
+    # I guess initializing the pretrained model? I"m not too sure if this is fine, or I should be using feed_dict somehow
+    # sess.run(cnn.words.assign(model))
     
     def train_step(x_batch, y_batch):
       """
@@ -217,14 +213,49 @@ def train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length):
             outputs={"predictions":output}
             )
 
+def get_word_to_vec_model(model_path):
+  matrix_size = 50
+  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
+  
+  # store the embeddings in a numpy array
+  
+  # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
+  embedding_matrix = np.zeros((matrix_size + 1, EMBEDDING_DIM))
+  # for i in range(len(model.wv.vocab)):
+  for i in range(matrix_size):
+    embedding_vector = model.wv[model.wv.index2word[i]]
+    if embedding_vector is not None:
+      embedding_matrix[i] = embedding_vector
+   
+  # have to add one for some reason? Maybe cuz its length?
+  model_length = matrix_size + 1
+  # free up the memory
+  del(model)
+  
+  return model_length, embedding_matrix
+  
+  
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
-  # xml_file = "small_data.xml"
-  xml_file = "cits.xml"
+  xml_file = "small_data.xml"
+  # xml_file = "cits.xml"
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
-  train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length)
+
+  model = None
+  if PRETRAINED_W2V_PATH:
+    model_length, model = get_word_to_vec_model(PRETRAINED_W2V_PATH)
+    print('model length: ', model_length)
+    train_CNN(train_dataset,
+              test_dataset,
+              vocab_processor,
+              max_doc_length,
+              model=model,
+              embedding_model_length=model_length)
+  else:
+    train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length)
+  
     
       
 if __name__ == '__main__':
