@@ -36,7 +36,7 @@ class IndexClassCNN(object):
         print("We are going the pre-trained route")
       else:
         self.words = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0,1.0), name="words")
-      print("made it here2:")
+        
       self.embedded_chars = tf.nn.embedding_lookup(self.words, self.input_x)
       self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)  
      
