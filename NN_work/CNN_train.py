@@ -6,13 +6,11 @@ import os
 import time
 import re
 import math
-import seaborn as sns
 import datetime
 import nltk 
 
 import lxml.etree as etree
 import tensorflow as tf
-import tensorflow_hub as hub
 from tensorflow.contrib.learn import preprocessing
 
 import warnings
@@ -159,7 +157,7 @@ def train_CNN(train_dataset,
       A single training step
       """
       cnn.input_x, cnn.input_y = x_batch, y_batch
-      cnn.dropout_keep_prob: DROPOUT_KEEP_PROB
+      cnn.dropout_keep_prob = DROPOUT_KEEP_PROB
       output = sess.run(x_batch)
       
       # training op doesn't return anything
@@ -175,7 +173,7 @@ def train_CNN(train_dataset,
       Evaluates model on a test set
       """
       cnn.input_x, cnn.input_y = x_batch, y_batch
-      cnn.dropout_keep_prob: 1.0
+      cnn.dropout_keep_prob = 1.0
 
       step, summaries, loss, accuracy = sess.run(
         [global_step, test_summary_op, cnn.loss, cnn.accuracy])
