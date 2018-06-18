@@ -6,13 +6,11 @@ import os
 import time
 import re
 import math
-import seaborn as sns
 import datetime
 import nltk 
 
 import lxml.etree as etree
 import tensorflow as tf
-import tensorflow_hub as hub
 from tensorflow.contrib.learn import preprocessing
 
 import warnings
