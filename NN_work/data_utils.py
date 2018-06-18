@@ -28,18 +28,64 @@ def fast_iter(context, func, *args, **kwargs):
   del context
 
 def get_abstract_text_with_targets(elem, output_list):
+  cit_dict = {}
+  
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
+  
   if(output_text is not None):
-    output_list.append(
-    {"text": etree.tostring(output_text, method="text", with_tail=False, encoding='unicode'),
-     "target":medline_cit_tag.get("Status")
-     })
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
     empty_abstract = etree.Element("AbstractText")
-    empty_abstract.text = ""
-    output_list.append({"text": etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode'), "target":medline_cit_tag.get("Status")})
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  cit_dict["target"] = medline_cit_tag.get("Status")
 
+  output_list.append(cit_dict)
+    
+def get_abstract_text_with_targets_and_metadata(elem, output_list):
+  cit_dict = {}
+  
+  output_text = elem.find(".//AbstractText")
+  medline_cit_tag = elem.find(".//MedlineCitation")
+  
+  journal_title_tag = elem.find(".//Title")
+  article_title_tag = elem.find(".//ArticleTitle")
+  
+  authors = elem.find(".//AuthorList")
+  keywords = elem.find(".//KeywordList")
+  author_list = []
+  keyword_list = []
+  
+  if(output_text is not None):
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
+  else:
+    empty_abstract = etree.Element("AbstractText")
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  
+  if author_list is not None:
+    affiliations = authors.findall(".//Affiliation")
+  else:
+    affiliations = []
+  
+  if keywords is not None:
+    words = keywords.findall("Keyword")
+  else:
+    words = []
+
+  cit_dict["target"] = medline_cit_tag.get("Status")
+  cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
+  cit_dict["article_title"] = etree.tostring(article_title_tag, method="text", with_tail=False, encoding='unicode')
+
+  cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
+  cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
+  
+  output_list.append(cit_dict)
+    
+    
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -67,7 +113,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
 
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, get_abstract_text_with_targets, text_list)
+    fast_iter(context, get_abstract_text_with_targets_and_metadata, text_list)
     
   end_time = time.time()
   
