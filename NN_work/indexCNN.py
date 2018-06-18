@@ -11,7 +11,7 @@ class IndexClassCNN(object):
   TODO: eventually switch to custom estimator probably.
   """
   def __init__(self, input_x, input_y, dropout, sequence_length, num_classes, vocab_size,
-      embedding_size, filter_sizes, num_filters, embedding_model_length=0, l2_reg_lambda=0.0):
+      embedding_size, filter_sizes, num_filters, has_pretrained_model=False, l2_reg_lambda=0.0):
     
     # We set these values initially but never use them. Probably there's a better way. 
     self.input_x = input_x
@@ -26,15 +26,14 @@ class IndexClassCNN(object):
     # TODO GPU: eventually needs to be changed
     # with tf.device("/cpu:0"), tf.name_scope("embedding"):
     with tf.name_scope("embedding"):
-      if embedding_model_length:
-        print("HMMM?: ", embedding_model_length)
+      if has_pretrained_model:
         self.words = tf.Variable(
             tf.Variable(tf.constant(0.0, 
-                                    shape=[embedding_model_length, embedding_size]),
+                                    shape=[vocab_size, embedding_size]),
                                     trainable=False,
                                     name="words"
                         ))
-        print("We are going with the non trained route, interesting")
+        print("We are going the pre-trained route")
       else:
         self.words = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0,1.0), name="words")
       print("made it here2:")

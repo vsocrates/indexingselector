@@ -50,7 +50,7 @@ def train_CNN(train_dataset,
               vocab_processor,
               max_doc_length,
               model=None,
-              embedding_model_length=0):
+              ):
 
   # TODO GPU: when this is eventually run on a GPU setup, this some of what we'd change.
   session_conf = tf.ConfigProto(
@@ -71,7 +71,12 @@ def train_CNN(train_dataset,
 
     sess.run(train_init_op)
     input_x, input_y = iterator.get_next()
-  
+    
+    if model is not None:
+      pretrained_model = True
+    else:
+      pretrained_model = False
+      
     cnn = IndexClassCNN(
         input_x,
         input_y,
@@ -82,7 +87,7 @@ def train_CNN(train_dataset,
         embedding_size=EMBEDDING_DIM,
         filter_sizes=list(map(int, FILTER_SIZES.split(","))),
         num_filters=NUM_FILTERS,
-        embedding_model_length=embedding_model_length,
+        has_pretrained_model=pretrained_model,
         l2_reg_lambda=L2_REG_LAMBDA
         )
 
@@ -141,9 +146,10 @@ def train_CNN(train_dataset,
       # print("made it here1:")
     
     # set up if we have an embedding already
-    embedding_placeholder = tf.placeholder(tf.float32, [embedding_model_length, EMBEDDING_DIM])
-    embedding_init = cnn.words.assign(embedding_placeholder)    
-    sess.run(embedding_init, feed_dict={embedding_placeholder:model})
+    if model is not None:
+      embedding_placeholder = tf.placeholder(tf.float32, [len(vocab_processor.vocab), EMBEDDING_DIM])
+      embedding_init = cnn.words.assign(embedding_placeholder)    
+      sess.run(embedding_init, feed_dict={embedding_placeholder:model})
     
     # I guess initializing the pretrained model? I"m not too sure if this is fine, or I should be using feed_dict somehow
     # sess.run(cnn.words.assign(model))
@@ -213,14 +219,14 @@ def train_CNN(train_dataset,
             outputs={"predictions":output}
             )
 
-def get_word_to_vec_model(model_path):
+def get_word_to_vec_model(model_path, vocab_length):
   matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((matrix_size + 1, EMBEDDING_DIM))
+  embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
   for i in range(matrix_size):
     embedding_vector = model.wv[model.wv.index2word[i]]
@@ -232,7 +238,7 @@ def get_word_to_vec_model(model_path):
   # free up the memory
   del(model)
   
-  return model_length, embedding_matrix
+  return embedding_matrix
   
   
 def main(argv=None):
@@ -245,14 +251,13 @@ def main(argv=None):
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model_length, model = get_word_to_vec_model(PRETRAINED_W2V_PATH)
-    print('model length: ', model_length)
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, len(vocab_processor.vocab))
     train_CNN(train_dataset,
               test_dataset,
               vocab_processor,
               max_doc_length,
               model=model,
-              embedding_model_length=model_length)
+              )
   else:
     train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length)
   
