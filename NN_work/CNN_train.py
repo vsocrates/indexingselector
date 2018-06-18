@@ -54,7 +54,7 @@ def train_CNN(train_dataset,
   session_conf = tf.ConfigProto(
             allow_soft_placement=ALLOW_SOFT_PLACEMENT, # determines if op can be placed on CPU when GPU not avail
             log_device_placement=LOG_DEVICE_PLACEMENT, # whether device placements should be logged, we don't have any for CPU
-            operation_timeout_in_ms=60000
+            #operation_timeout_in_ms=60000
             )
   sess = tf.Session(config=session_conf)
   with sess.as_default():
@@ -209,13 +209,39 @@ def train_CNN(train_dataset,
     final_model_dir = os.path.abspath(os.path.join(out_dir, "final"))
     input_x, input_y = cnn.get_inputs()
     output = cnn.get_outputs()
-    tf.saved_model.simple_save(
-            sess,
-            final_model_dir,
-            inputs={"input_x":input_x,
-                    "input_y":input_y},
-            outputs={"predictions":output}
-            )
+
+    builder = tf.saved_model.builder.SavedModelBuilder(final_model_dir)
+
+    sess.run(train_init_op)
+    input_x, input_y = iterator.get_next()
+
+    text_input_tensor_info = tf.saved_model.utils.build_tensor_info(input_x)
+    predictions_output_tensor_info = tf.saved_model.utils.build_tensor_info(output)
+    
+    prediction_signature = (
+      tf.saved_model.signature_def_utils.build_signature_def(
+        inputs={"text":text_input_tensor_info},
+        outputs={
+          "classes":predictions_output_tensor_info
+        },
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+      )
+    )
+    builder.add_meta_graph_and_variables(
+        sess, [tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
+            'predict_indexing':
+                prediction_signature,
+        })    
+
+
+#    tf.saved_model.simple_save(
+#            sess,
+#            final_model_dir,
+#            inputs={"input_x":input_x,
+#                    "input_y":input_y},
+#            outputs={"predictions":output}
+#            )
 
 def get_word_to_vec_model(model_path, vocab_length):
   matrix_size = 50
