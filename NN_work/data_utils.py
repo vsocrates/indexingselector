@@ -128,7 +128,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
   # we use nltk to word tokenize
   count_vect = VocabProcessor(word_tokenize)
   # this function creates the datasets using the vocab.py file
-  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data(text_list)
+  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   

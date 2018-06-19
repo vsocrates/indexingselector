@@ -37,9 +37,9 @@ ALLOW_SOFT_PLACEMENT=True
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 2 # default 5
 BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 20 # default 200
-EVALUATE_EVERY = 10 # Evaluate the model after this many steps on the test set; default 100
-CHECKPOINT_EVERY = 10 # Save the model after this many steps, every time
+NUM_EPOCHS = 10 # default 200
+EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
+CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
@@ -216,17 +216,42 @@ def train_CNN(train_dataset,
                     "input_y":input_y},
             outputs={"predictions":output}
             )
+    
+    # legacy, in case we can't use simple_save (like for 1.4.1 tensorflow edition on hpc)
+    
+    # builder = tf.saved_model.builder.SavedModelBuilder(final_model_dir)
+
+    # sess.run(train_init_op)
+    # input_x, input_y = iterator.get_next()
+
+    # text_input_tensor_info = tf.saved_model.utils.build_tensor_info(input_x)
+    # predictions_output_tensor_info = tf.saved_model.utils.build_tensor_info(output)
+    
+    # prediction_signature = (
+      # tf.saved_model.signature_def_utils.build_signature_def(
+        # inputs={"text":text_input_tensor_info},
+        # outputs={
+          # "classes":predictions_output_tensor_info
+        # },
+        # method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+      # )
+    # )
+    # builder.add_meta_graph_and_variables(
+        # sess, [tf.saved_model.tag_constants.SERVING],
+        # signature_def_map={
+            # 'predict_indexing':
+                # prediction_signature,
+        # })    
 
 def get_word_to_vec_model(model_path, vocab_length):
   matrix_size = 50
-  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  
+  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True)
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
   embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  for i in range(matrix_size):
+  for i in range(vocab_length):
     embedding_vector = model.wv[model.wv.index2word[i]]
     if embedding_vector is not None:
       embedding_matrix[i] = embedding_vector

@@ -54,7 +54,7 @@ class VocabProcessor:
       vocab: the vocabulary
       sequence_ex_list: the Dataset taken from from_tensor_slices containing all data per training example
   """
-  def prepare_data(self, doc_data_list, save_records=False):
+  def prepare_data_text_only(self, doc_data_list, save_records=False):
     # first we want to split up the text in all the docs and make the vocab
     all_word_id_list = []
     labels = []
@@ -125,7 +125,7 @@ class VocabProcessor:
 
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
-
+  
 
   """
     Expects this passed as a list of documents in memory. If not, we need to come up with a different way to read in all these docs
