@@ -23,7 +23,7 @@ from data_utils import get_batch
 from indexCNN import IndexClassCNN
 
 # Data loading Parameters
-TRAIN_SET_PERCENTAGE = 0.9
+TRAIN_SET_PERCENTAGE = 0.2
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128
@@ -36,7 +36,7 @@ DROPOUT_KEEP_PROB=0.5
 ALLOW_SOFT_PLACEMENT=True
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 2 # default 5
-BATCH_SIZE = 64 # default 64
+BATCH_SIZE = 5 # default 64
 NUM_EPOCHS = 10 # default 200
 EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
@@ -192,11 +192,13 @@ def train_CNN(train_dataset,
       if current_step % EVALUATE_EVERY == 0:
         print("\nEvaluation:")
         sess.run(test_init_op)
+        vocab_processor.reset_test_generator()
         test_x, test_y = iterator.get_next()
         while True:
           try:
             test_step(test_x,test_y, writer=test_summary_writer)
           except tf.errors.OutOfRangeError:
+            print("We are out of range")
             break
             
       if current_step % CHECKPOINT_EVERY == 0:
@@ -245,13 +247,18 @@ def train_CNN(train_dataset,
 
 def get_word_to_vec_model(model_path, vocab_length):
   matrix_size = 50
-  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True)
+  matrix_max_flag = False
+  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True,matrix_size = 50)
+  print(type(model))
+  print(model.vector_size)
+  print(len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
   embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  for i in range(vocab_length):
+  max_size = min(len(model.index2word), vocab_length)
+  for i in range(max_size):
     embedding_vector = model.wv[model.wv.index2word[i]]
     if embedding_vector is not None:
       embedding_matrix[i] = embedding_vector

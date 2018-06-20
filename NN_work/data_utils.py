@@ -55,8 +55,6 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   authors = elem.find(".//AuthorList")
   keywords = elem.find(".//KeywordList")
-  author_list = []
-  keyword_list = []
   
   if(output_text is not None):
     cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
@@ -66,7 +64,8 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
     cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
   
   
-  if author_list is not None:
+  if authors is not None:
+    # print("not none:? ", authors)
     affiliations = authors.findall(".//Affiliation")
   else:
     affiliations = []
