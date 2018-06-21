@@ -26,20 +26,20 @@ from indexCNN import IndexClassCNN
 TRAIN_SET_PERCENTAGE = 0.9
 
 # Model Hyperparameters
-EMBEDDING_DIM = 200 # default 128
+EMBEDDING_DIM = 200 # default 128, pretrained => 200
 FILTER_SIZES = "3,4,5"
 NUM_FILTERS= 128 # this is per filter size; default = 128
 L2_REG_LAMBDA=0.0 # L2 regularization lambda
-DROPOUT_KEEP_PROB=0.5
+DROPOUT_KEEP_PROB=0.6
 
 # Training Parameters
-ALLOW_SOFT_PLACEMENT=True
+ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
-NUM_CHECKPOINTS = 2 # default 5
-BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 20 # default 200
-EVALUATE_EVERY = 10 # Evaluate the model after this many steps on the test set; default 100
-CHECKPOINT_EVERY = 10 # Save the model after this many steps, every time
+NUM_CHECKPOINTS = 5 # default 5
+BATCH_SIZE = 32 # default 64
+NUM_EPOCHS = 200 # default 200
+EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set; default 100
+CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time; default 100
 PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
@@ -56,6 +56,7 @@ def train_CNN(train_dataset,
             log_device_placement=LOG_DEVICE_PLACEMENT, # whether device placements should be logged, we don't have any for CPU
             #operation_timeout_in_ms=60000
             )
+  session_conf.gpu_options.allow_growth = True
   sess = tf.Session(config=session_conf)
   with sess.as_default():
     
@@ -188,17 +189,28 @@ def train_CNN(train_dataset,
       input_x, input_y = iterator.get_next()
       train_step(input_x, input_y)
       current_step = tf.train.global_step(sess, global_step)
-      
+
       if current_step % EVALUATE_EVERY == 0:
         print("\nEvaluation:")
         sess.run(test_init_op)
+        vocab_processor.reset_test_generator()
         test_x, test_y = iterator.get_next()
-        while True:
-          try:
-            test_step(test_x,test_y, writer=test_summary_writer)
-          except tf.errors.OutOfRangeError:
-            break
-            
+        try:
+          test_step(test_x,test_y, writer=test_summary_writer)
+        except tf.errors.OutOfRangeError:
+          pass
+          # print("We are out of range")
+          # break
+
+#      if current_step % EVALUATE_EVERY == 0:
+#        print("\nEvaluation:")
+#        sess.run(test_init_op)
+#        test_x, test_y = iterator.get_next()
+#        while True:
+#          try:
+#            test_step(test_x,test_y, writer=test_summary_writer)
+#          except tf.errors.OutOfRangeError:
+#            break
       if current_step % CHECKPOINT_EVERY == 0:
         # uses the global step number as part of the file name
         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
@@ -244,15 +256,17 @@ def train_CNN(train_dataset,
 #            )
 
 def get_word_to_vec_model(model_path, vocab_length):
-  matrix_size = 50
+  matrix_size = 90000 
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  
+  print(model.vector_size)
+  print(len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
   embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  for i in range(matrix_size):
+  max_size = min(len(model.index2word), vocab_length)
+  for i in range(max_size):
     embedding_vector = model.wv[model.wv.index2word[i]]
     if embedding_vector is not None:
       embedding_matrix[i] = embedding_vector

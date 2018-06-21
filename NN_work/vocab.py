@@ -87,33 +87,33 @@ class VocabProcessor:
     # TODO: will eventually have to replace this with cross-validation
 
     # we'll randomize the data and create train and test datasets using scikit here: 
-    X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
+    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
 
-    train_tuple = zip(X_train, Y_train)
-    test_tuple = zip(X_test, Y_test)
-  
+    self.train_tuple = zip(self.X_train, self.Y_train)
+    self.test_tuple = zip(self.X_test, self.Y_test)
+
     # these are the generators used to create the datasets
     def train_generator():
       # this one needs to run as long as we have more epochs
-      while True:
-        train_tuple = zip(X_train, Y_train)
-        data_iter = iter(train_tuple)
+      # while True:
+        self.train_tuple = zip(self.X_train, self.Y_train)
+        data_iter = iter(self.train_tuple)
         for x, y in data_iter:
           yield x, y
     
     # the test generator is reinitialized every time its used, so no need for infinite loop
     def test_generator():
-      for x, y in test_tuple:
+      for x, y in self.test_tuple:
         yield x, y
 
         
     train_dataset = tf.data.Dataset.from_generator(train_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) )).repeat()
                                            
     test_dataset = tf.data.Dataset.from_generator(test_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) )).repeat()
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
@@ -125,6 +125,9 @@ class VocabProcessor:
 
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
+  def reset_test_generator(self):
+#    del self.test_tuple
+    self.test_tuple = zip(self.X_test, self.Y_test)
 
 
   """
