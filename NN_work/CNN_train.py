@@ -36,7 +36,7 @@ DROPOUT_KEEP_PROB=0.6
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 32 # default 64
+BATCH_SIZE = 64 # default 64
 NUM_EPOCHS = 200 # default 200
 EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time; default 100
@@ -186,7 +186,6 @@ def train_CNN(train_dataset,
     # Training loop. For each batch...
     for _ in range(NUM_EPOCHS):
       sess.run(train_init_op)
-      input_x, input_y = iterator.get_next()
       train_step(input_x, input_y)
       current_step = tf.train.global_step(sess, global_step)
 
@@ -194,12 +193,12 @@ def train_CNN(train_dataset,
         print("\nEvaluation:")
         sess.run(test_init_op)
         vocab_processor.reset_test_generator()
-        test_x, test_y = iterator.get_next()
-        try:
-          test_step(test_x,test_y, writer=test_summary_writer)
-        except tf.errors.OutOfRangeError:
-          pass
-          # print("We are out of range")
+        while True:
+          try:
+            test_step(input_x,input_y, writer=test_summary_writer)
+          except tf.errors.OutOfRangeError:
+            print("We are out of range")
+            break
           # break
 
 #      if current_step % EVALUATE_EVERY == 0:
@@ -223,9 +222,6 @@ def train_CNN(train_dataset,
     output = cnn.get_outputs()
 
     builder = tf.saved_model.builder.SavedModelBuilder(final_model_dir)
-
-    sess.run(train_init_op)
-    input_x, input_y = iterator.get_next()
 
     text_input_tensor_info = tf.saved_model.utils.build_tensor_info(input_x)
     predictions_output_tensor_info = tf.saved_model.utils.build_tensor_info(output)
