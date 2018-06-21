@@ -23,7 +23,7 @@ from data_utils import get_batch
 from indexCNN import IndexClassCNN
 
 # Data loading Parameters
-TRAIN_SET_PERCENTAGE = 0.2
+TRAIN_SET_PERCENTAGE = 0.9
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128
@@ -36,7 +36,7 @@ DROPOUT_KEEP_PROB=0.5
 ALLOW_SOFT_PLACEMENT=True
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 2 # default 5
-BATCH_SIZE = 5 # default 64
+BATCH_SIZE = 64 # default 64
 NUM_EPOCHS = 10 # default 200
 EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
@@ -246,9 +246,8 @@ def train_CNN(train_dataset,
         # })    
 
 def get_word_to_vec_model(model_path, vocab_length):
-  matrix_size = 50
-  matrix_max_flag = False
-  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True,matrix_size = 50)
+  matrix_size = 100
+  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(type(model))
   print(model.vector_size)
   print(len(model.index2word))
@@ -273,8 +272,8 @@ def get_word_to_vec_model(model_path, vocab_length):
   
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
-  xml_file = "small_data.xml"
-  # xml_file = "cits.xml"
+  # xml_file = "small_data.xml"
+  xml_file = "cits.xml"
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)

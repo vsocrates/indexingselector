@@ -125,12 +125,19 @@ class VocabProcessor:
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
   def reset_test_generator(self):
-    # print(dir(self))
     self.test_tuple = zip(self.X_test, self.Y_test)
-    # print(dir(self))
-    # print(locals())
-    # print(globals())    
 
+  def cross_validate(session, split_size=5):
+    results = []
+    kf = KFold(n_splits=split_size)
+    for train_idx, val_idx in kf.split(train_x_all, train_y_all):
+      train_x = train_x_all[train_idx]
+      train_y = train_y_all[train_idx]
+      val_x = train_x_all[val_idx]
+      val_y = train_y_all[val_idx]
+      run_train(session, train_x, train_y)
+      results.append(session.run(accuracy, feed_dict={x: val_x, y: val_y}))
+    return results    
 
   """
     Expects this passed as a list of documents in memory. If not, we need to come up with a different way to read in all these docs
