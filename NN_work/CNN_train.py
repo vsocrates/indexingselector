@@ -37,9 +37,9 @@ ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 200 # default 200
-EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set; default 100
-CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time; default 100
+NUM_EPOCHS = 10 # default 200
+EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
+CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
@@ -116,6 +116,11 @@ def train_CNN(train_dataset,
     # Summaries for loss and accuracy
     loss_summary = tf.summary.scalar("loss", cnn.loss)
     accuracy_summary = tf.summary.scalar("accuracy", cnn.accuracy)
+
+    # TODO: implement precision/recall    
+    # Summaries for precision/recall
+    # precision_summary = tf.summary.scalar("precision", cnn.precision)
+    # recall_summary = tf.summary.scalar("recall", cnn.recall)
     
     # Training Summaries
     train_summary_op = tf.summary.merge([loss_summary, accuracy_summary, grad_summaries_merged])
@@ -252,7 +257,7 @@ def train_CNN(train_dataset,
 #            )
 
 def get_word_to_vec_model(model_path, vocab_length):
-  matrix_size = 90000 
+  matrix_size = 900
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
   print(len(model.index2word))
@@ -277,8 +282,8 @@ def get_word_to_vec_model(model_path, vocab_length):
   
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
-  xml_file = "small_data.xml"
-  # xml_file = "cits.xml"
+  # xml_file = "small_data.xml"
+  xml_file = "cits.xml"
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
