@@ -30,7 +30,7 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 FILTER_SIZES = "3,4,5"
 NUM_FILTERS= 128 # this is per filter size; default = 128
 L2_REG_LAMBDA=0.0 # L2 regularization lambda
-DROPOUT_KEEP_PROB=0.6
+DROPOUT_KEEP_PROB=0.65
 
 # Training Parameters
 ALLOW_SOFT_PLACEMENT=False
