@@ -116,6 +116,10 @@ def train_CNN(train_dataset,
     loss_summary = tf.summary.scalar("loss", cnn.loss)
     accuracy_summary = tf.summary.scalar("accuracy", cnn.accuracy)
     
+    # Summaries for precision/recall
+    precision_summary = tf.summary.scalar("precision", cnn.precision)
+    recall_summary = tf.summary.scalar("recall", cnn.recall)
+    
     # Training Summaries
     train_summary_op = tf.summary.merge([loss_summary, accuracy_summary, grad_summaries_merged])
     train_summary_dir = os.path.join(out_dir, "summaries", "train")
