@@ -7,7 +7,6 @@ from nltk import word_tokenize
 
 from vocab import VocabProcessor
 
-
 def fast_iter(context, func, *args, **kwargs):
   """
   http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
@@ -106,7 +105,7 @@ def get_target_list(dictList):
       output_list.append([1,0])
   return output_list
 
-def data_load(xml_file, text_list, premade_vocab_processor=None):
+def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
   # we are timing the abstract text data pull
   start_time = time.time()
 
@@ -125,7 +124,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     count_vect = premade_vocab_processor
   
   # we use nltk to word tokenize
-  count_vect = VocabProcessor(word_tokenize)
+  count_vect = VocabProcessor(word_tokenize, batch_size, train_size)
   # this function creates the datasets using the vocab.py file
   train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
     

@@ -22,11 +22,10 @@ from sklearn.utils import shuffle
 PAD = "<PAD>"
 START = "<START>"
 EOS = "<EOS>"
-BATCH_SIZE = 64 # default 64
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn):
+  def __init__(self, tokenizer_fn, batch_size, train_size):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
     self.vocab[PAD] = 0
@@ -36,6 +35,9 @@ class VocabProcessor:
     self.tokenizer = tokenizer_fn
     self.reverse_vocab = {}
 
+    self.batch_size = batch_size
+    self.test_size = 1.0 - train_size
+    
   def next_value(self):
       self.next += 1
       return self.next
@@ -87,7 +89,7 @@ class VocabProcessor:
     # TODO: will eventually have to replace this with cross-validation
 
     # we'll randomize the data and create train and test datasets using scikit here: 
-    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
+    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=self.test_size, random_state=42, shuffle=True)
 
     self.train_tuple = zip(self.X_train, self.Y_train)
     self.test_tuple = zip(self.X_test, self.Y_test)
@@ -95,7 +97,6 @@ class VocabProcessor:
     # these are the generators used to create the datasets
     def train_generator():
       # this one needs to run as long as we have more epochs
-      # while True:
       self.train_tuple = zip(self.X_train, self.Y_train)
       data_iter = iter(self.train_tuple)
       for x, y in data_iter:
@@ -116,8 +117,8 @@ class VocabProcessor:
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
-    batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length], [2])).                          repeat()
-    batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length],[2])).                          repeat()
+    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [2])).repeat()
+    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[2])).repeat()
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
@@ -126,7 +127,8 @@ class VocabProcessor:
 
   def reset_test_generator(self):
     self.test_tuple = zip(self.X_test, self.Y_test)
-
+  
+  # TODO: Not used yet since deprecated indexCNN for v2.0
   def cross_validate(session, split_size=5):
     results = []
     kf = KFold(n_splits=split_size)

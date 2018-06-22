@@ -286,7 +286,7 @@ def main(argv=None):
   xml_file = "cits.xml"
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
+  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)
 
   model = None
   if PRETRAINED_W2V_PATH:
