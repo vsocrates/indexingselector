@@ -30,13 +30,13 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 FILTER_SIZES = "3,4,5"
 NUM_FILTERS= 128 # this is per filter size; default = 128
 L2_REG_LAMBDA=0.0 # L2 regularization lambda
-DROPOUT_KEEP_PROB=0.6
+DROPOUT_KEEP_PROB=0.65
 
 # Training Parameters
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
+BATCH_SIZE = 128 # default 64
 NUM_EPOCHS = 200 # default 200
 EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time; default 100
@@ -276,8 +276,8 @@ def get_word_to_vec_model(model_path, vocab_length):
   
   
 def main(argv=None):
-  # xml_file = "pubmed_result.xml"
-  xml_file = "small_data.xml"
+  xml_file = "pubmed_result.xml"
+  # xml_file = "small_data.xml"
   # xml_file = "cits.xml"
   text_list = []
 

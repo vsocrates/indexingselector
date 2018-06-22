@@ -87,7 +87,7 @@ class VocabProcessor:
     # TODO: will eventually have to replace this with cross-validation
 
     # we'll randomize the data and create train and test datasets using scikit here: 
-    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=0.60, random_state=42, shuffle=True)
+    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
 
     self.train_tuple = zip(self.X_train, self.Y_train)
     self.test_tuple = zip(self.X_test, self.Y_test)
