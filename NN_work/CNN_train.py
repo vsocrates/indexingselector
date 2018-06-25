@@ -276,9 +276,10 @@ def get_word_to_vec_model(model_path, vocab_length):
   
   
 def main(argv=None):
-  xml_file = "pubmed_result.xml"
+  # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
   # xml_file = "cits.xml"
+  xml_file = "pubmed_result_2012_2018.xml"
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
