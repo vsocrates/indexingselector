@@ -36,14 +36,12 @@ class VocabProcessor:
     self.reverse_vocab = {}
 
     self.batch_size = batch_size
-    print("batch", self.batch_size)
-    print("batch1", train_size)
     self.test_size = round(1.0 - train_size, 2)
-    print("test: ", self.test_size)
+
   def next_value(self):
-      self.next += 1
-      return self.next
-  
+    self.next += 1
+    return self.next
+
   """
     I don't know if this is the right move, but take in data of the form of a list of dict:
     With all features and raw text that we want. 

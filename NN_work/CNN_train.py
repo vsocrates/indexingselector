@@ -276,6 +276,7 @@ def get_word_to_vec_model(model_path, vocab_proc):
     else:
     # I'm pretty sure something is supposed to happen here but idk what
       pass
+    
       
   # this doesn't correlate with our actual vocab indexes (terrible programming Vimig)
   
