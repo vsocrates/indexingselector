@@ -103,9 +103,13 @@ class IndexClassCNN(object):
     with tf.name_scope("accuracy"):
       correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
       self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
+  
+    # TODO: implement precision/recall
+    # with tf.name_scope("precision"):
       
   def get_inputs(self):
     return self.input_x, self.input_y
+
   def get_outputs(self):
     return self.predictions
     

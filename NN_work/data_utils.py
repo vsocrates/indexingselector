@@ -7,7 +7,6 @@ from nltk import word_tokenize
 
 from vocab import VocabProcessor
 
-
 def fast_iter(context, func, *args, **kwargs):
   """
   http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
@@ -28,18 +27,63 @@ def fast_iter(context, func, *args, **kwargs):
   del context
 
 def get_abstract_text_with_targets(elem, output_list):
+  cit_dict = {}
+  
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
+  
   if(output_text is not None):
-    output_list.append(
-    {"text": etree.tostring(output_text, method="text", with_tail=False, encoding='unicode'),
-     "target":medline_cit_tag.get("Status")
-     })
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
     empty_abstract = etree.Element("AbstractText")
-    empty_abstract.text = ""
-    output_list.append({"text": etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode'), "target":medline_cit_tag.get("Status")})
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  cit_dict["target"] = medline_cit_tag.get("Status")
 
+  output_list.append(cit_dict)
+    
+def get_abstract_text_with_targets_and_metadata(elem, output_list):
+  cit_dict = {}
+  
+  output_text = elem.find(".//AbstractText")
+  medline_cit_tag = elem.find(".//MedlineCitation")
+  
+  journal_title_tag = elem.find(".//Title")
+  article_title_tag = elem.find(".//ArticleTitle")
+  
+  authors = elem.find(".//AuthorList")
+  keywords = elem.find(".//KeywordList")
+  
+  if(output_text is not None):
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
+  else:
+    empty_abstract = etree.Element("AbstractText")
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  
+  if authors is not None:
+    # print("not none:? ", authors)
+    affiliations = authors.findall(".//Affiliation")
+  else:
+    affiliations = []
+  
+  if keywords is not None:
+    words = keywords.findall("Keyword")
+  else:
+    words = []
+
+  cit_dict["target"] = medline_cit_tag.get("Status")
+  cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
+  cit_dict["article_title"] = etree.tostring(article_title_tag, method="text", with_tail=False, encoding='unicode')
+
+  cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
+  cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
+  
+  output_list.append(cit_dict)
+    
+    
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -61,16 +105,40 @@ def get_target_list(dictList):
       output_list.append([1,0])
   return output_list
 
-def data_load(xml_file, text_list, premade_vocab_processor=None):
+import sys
+
+def get_size(obj, seen=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(v, seen) for v in obj.values()])
+        size += sum([get_size(k, seen) for k in obj.keys()])
+    elif hasattr(obj, '__dict__'):
+        size += get_size(obj.__dict__, seen)
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(i, seen) for i in obj])
+    return size
+  
+  
+def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
   # we are timing the abstract text data pull
   start_time = time.time()
 
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, get_abstract_text_with_targets, text_list)
+    fast_iter(context, get_abstract_text_with_targets_and_metadata, text_list)
     
   end_time = time.time()
   
+  print(get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
   np.random.shuffle(text_list)
@@ -80,9 +148,9 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     count_vect = premade_vocab_processor
   
   # we use nltk to word tokenize
-  count_vect = VocabProcessor(word_tokenize)
+  count_vect = VocabProcessor(word_tokenize, batch_size, train_size)
   # this function creates the datasets using the vocab.py file
-  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data(text_list)
+  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   

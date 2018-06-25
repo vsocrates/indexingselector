@@ -27,18 +27,63 @@ def fast_iter(context, func, *args, **kwargs):
   del context
 
 def get_abstract_text_with_targets(elem, output_list):
+  cit_dict = {}
+  
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
+  
   if(output_text is not None):
-    output_list.append(
-    {"text": etree.tostring(output_text, method="text", with_tail=False, encoding='unicode'),
-     "target":medline_cit_tag.get("Status")
-     })
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
     empty_abstract = etree.Element("AbstractText")
-    empty_abstract.text = ""
-    output_list.append({"text": etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode'), "target":medline_cit_tag.get("Status")})
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  cit_dict["target"] = medline_cit_tag.get("Status")
 
+  output_list.append(cit_dict)
+    
+def get_abstract_text_with_targets_and_metadata(elem, output_list):
+  cit_dict = {}
+  
+  output_text = elem.find(".//AbstractText")
+  medline_cit_tag = elem.find(".//MedlineCitation")
+  
+  journal_title_tag = elem.find(".//Title")
+  article_title_tag = elem.find(".//ArticleTitle")
+  
+  authors = elem.find(".//AuthorList")
+  keywords = elem.find(".//KeywordList")
+  
+  if(output_text is not None):
+    cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
+  else:
+    empty_abstract = etree.Element("AbstractText")
+    empty_abstract.text = ""    
+    cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
+  
+  
+  if authors is not None:
+    # print("not none:? ", authors)
+    affiliations = authors.findall(".//Affiliation")
+  else:
+    affiliations = []
+  
+  if keywords is not None:
+    words = keywords.findall("Keyword")
+  else:
+    words = []
+
+  cit_dict["target"] = medline_cit_tag.get("Status")
+  cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
+  cit_dict["article_title"] = etree.tostring(article_title_tag, method="text", with_tail=False, encoding='unicode')
+
+  cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
+  cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
+  
+  output_list.append(cit_dict)
+    
+    
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -53,58 +98,39 @@ def get_target_list(dictList):
     target_list.append(str(text['target']))
 
   for text in target_list:
-    # print(text['target'])
+    # we have to set these labels like this, otherwise softmax complains
     if text == "MEDLINE":
-      output_list.append([1,0])
-    elif text == "PubMed-not-MEDLINE":
       output_list.append([0,1])
+    elif text == "PubMed-not-MEDLINE":
+      output_list.append([1,0])
   return output_list
 
-def data_load(xml_file, text_list, premade_vocab_processor=None):
+def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
   # we are timing the abstract text data pull
   start_time = time.time()
 
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, get_abstract_text_with_targets, text_list)
+    fast_iter(context, get_abstract_text_with_targets_and_metadata, text_list)
     
   end_time = time.time()
-  print("Total set size: " , len(text_list))
-  print("Total execution time parsing: {}".format(end_time - start_time))
   
-  # we want to shuffle the data first, so we have a good mix of positive and negative targets
+  print("Parsing took: --- %s seconds ---" % (end_time - start_time))
+  
   np.random.shuffle(text_list)
   
-  # then we will build the vocabulary
-  max_document_length = max([len(str(x['text']).split(" ")) for x in text_list])
   count_vect = None
   if premade_vocab_processor is not None:
     count_vect = premade_vocab_processor
   
-  count_vect = VocabProcessor(word_tokenize)
-  # X_vocab_vectors = np.array(list(count_vect.fit_transform(get_text_list(text_list))))
-  dataset = count_vect.prepare_data(text_list)
-  print("dataset no way!!!: ", dataset)
+  # we use nltk to word tokenize
+  count_vect = VocabProcessor(word_tokenize, batch_size, train_size)
+  # this function creates the datasets using the vocab.py file
+  train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
+    
+  print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
-  vocab_dict = count_vect.vocabulary_._mapping
-  sorted_vocab = sorted(vocab_dict.items(), key = lambda x : x[1])
-  vocabulary = list(list(zip(*sorted_vocab))[0])
-  print("vocab1: ", vocab_dict)
-
-  print("vocab1: ", vocabulary)
-  print("xvectors: ", X_vocab_vectors[0:2])
-  Y_targets = np.array(get_target_list(text_list))
-
-  # let's shuffle it some more, before we do the split, on the entire list
-  np.random.seed(15)
-  shuffle_indices = np.random.permutation(np.arange(len(Y_targets)))
-  X_vocab_vectors_shuffled = X_vocab_vectors[shuffle_indices]
-  Y_targets_shuffled = Y_targets[shuffle_indices]
-  print("Vocabulary Size: {:d}".format(len(count_vect.vocabulary_)))
-  
-  del X_vocab_vectors, Y_targets 
-
-  return X_vocab_vectors_shuffled, Y_targets_shuffled, count_vect
+  return train_dataset, test_dataset, count_vect, max_doc_length
   
   
 def get_batch(data, batch_size, num_epochs, shuffle=True):

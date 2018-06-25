@@ -36,10 +36,10 @@ DROPOUT_KEEP_PROB=0.65
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 128 # default 64
-NUM_EPOCHS = 200 # default 200
-EVALUATE_EVERY = 100 # Evaluate the model after this many steps on the test set; default 100
-CHECKPOINT_EVERY = 100 # Save the model after this many steps, every time; default 100
+BATCH_SIZE = 16 # default 64
+NUM_EPOCHS = 10 # default 200
+EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
+CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 
 # TODO: rename vars, Remember, these datasets below are already padded and batched
@@ -116,6 +116,11 @@ def train_CNN(train_dataset,
     # Summaries for loss and accuracy
     loss_summary = tf.summary.scalar("loss", cnn.loss)
     accuracy_summary = tf.summary.scalar("accuracy", cnn.accuracy)
+
+    # TODO: implement precision/recall    
+    # Summaries for precision/recall
+    # precision_summary = tf.summary.scalar("precision", cnn.precision)
+    # recall_summary = tf.summary.scalar("recall", cnn.recall)
     
     # Training Summaries
     train_summary_op = tf.summary.merge([loss_summary, accuracy_summary, grad_summaries_merged])
@@ -199,7 +204,6 @@ def train_CNN(train_dataset,
           except tf.errors.OutOfRangeError:
             print("We are out of range")
             break
-          # break
 
 #      if current_step % EVALUATE_EVERY == 0:
 #        print("\nEvaluation:")
@@ -251,25 +255,39 @@ def train_CNN(train_dataset,
 #            outputs={"predictions":output}
 #            )
 
-def get_word_to_vec_model(model_path, vocab_length):
-  matrix_size = 90000 
+def get_word_to_vec_model(model_path, vocab_proc):
+  vocab = vocab_proc.vocab
+  matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
   print(len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
+  embedding_matrix = np.zeros((len(vocab), EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  max_size = min(len(model.index2word), vocab_length)
-  for i in range(max_size):
-    embedding_vector = model.wv[model.wv.index2word[i]]
-    if embedding_vector is not None:
-      embedding_matrix[i] = embedding_vector
-   
-  # have to add one for some reason? Maybe cuz its length?
-  model_length = matrix_size + 1
-  # free up the memory
+  max_size = min(len(model.index2word), len(vocab))
+
+  for word, idx in vocab.items():
+    if word in model.wv:
+      embedding_vector = model.wv[word]
+      if embedding_vector is not None:
+        embedding_matrix[idx] = embedding_vector
+    else:
+    # I'm pretty sure something is supposed to happen here but idk what
+      pass
+    
+      
+  # this doesn't correlate with our actual vocab indexes (terrible programming Vimig)
+  
+  # for i in range(max_size):
+    # embedding_vector = model.wv[model.wv.index2word[i]]
+    # if embedding_vector is not None:
+      # embedding_matrix[i] = embedding_vector
+  # # print(embedding_matrix[0:2])
+  # # have to add one for some reason? Maybe cuz its length?
+  # model_length = matrix_size + 1
+  # # free up the memory
   del(model)
   
   return embedding_matrix
@@ -278,15 +296,17 @@ def get_word_to_vec_model(model_path, vocab_length):
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
+  xml_file = "small_data.xml"
   # xml_file = "cits.xml"
-  xml_file = "pubmed_result_2012_2018.xml"
+  # xml_file = "pubmed_result_2012_2018.xml"
+  
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
+  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, len(vocab_processor.vocab))
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor)
     train_CNN(train_dataset,
               test_dataset,
               vocab_processor,

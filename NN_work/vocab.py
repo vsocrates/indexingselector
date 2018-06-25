@@ -22,11 +22,10 @@ from sklearn.utils import shuffle
 PAD = "<PAD>"
 START = "<START>"
 EOS = "<EOS>"
-BATCH_SIZE = 64 # default 64
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn):
+  def __init__(self, tokenizer_fn, batch_size, train_size):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
     self.vocab[PAD] = 0
@@ -36,10 +35,13 @@ class VocabProcessor:
     self.tokenizer = tokenizer_fn
     self.reverse_vocab = {}
 
+    self.batch_size = batch_size
+    self.test_size = round(1.0 - train_size, 2)
+
   def next_value(self):
-      self.next += 1
-      return self.next
-  
+    self.next += 1
+    return self.next
+
   """
     I don't know if this is the right move, but take in data of the form of a list of dict:
     With all features and raw text that we want. 
@@ -54,7 +56,7 @@ class VocabProcessor:
       vocab: the vocabulary
       sequence_ex_list: the Dataset taken from from_tensor_slices containing all data per training example
   """
-  def prepare_data(self, doc_data_list, save_records=False):
+  def prepare_data_text_only(self, doc_data_list, save_records=False):
     # first we want to split up the text in all the docs and make the vocab
     all_word_id_list = []
     labels = []
@@ -87,26 +89,24 @@ class VocabProcessor:
     # TODO: will eventually have to replace this with cross-validation
 
     # we'll randomize the data and create train and test datasets using scikit here: 
-    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=0.10, random_state=42, shuffle=True)
+    self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(all_word_id_list, labels, test_size=self.test_size, random_state=42, shuffle=True)
 
     self.train_tuple = zip(self.X_train, self.Y_train)
     self.test_tuple = zip(self.X_test, self.Y_test)
-
+  
     # these are the generators used to create the datasets
     def train_generator():
       # this one needs to run as long as we have more epochs
-      # while True:
-        self.train_tuple = zip(self.X_train, self.Y_train)
-        data_iter = iter(self.train_tuple)
-        for x, y in data_iter:
-          yield x, y
-    
+      self.train_tuple = zip(self.X_train, self.Y_train)
+      data_iter = iter(self.train_tuple)
+      for x, y in data_iter:
+        yield x, y
+  
     # the test generator is reinitialized every time its used, so no need for infinite loop
     def test_generator():
       for x, y in self.test_tuple:
         yield x, y
-
-        
+    
     train_dataset = tf.data.Dataset.from_generator(train_generator,
                                            output_types= (tf.int32, tf.int32),
                                            output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) )).repeat()
@@ -117,8 +117,8 @@ class VocabProcessor:
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
-    batched_train_dataset = train_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length], [2])).                          repeat()
-    batched_test_dataset = test_dataset.padded_batch(BATCH_SIZE, padded_shapes=([max_doc_length],[2])).                          repeat()
+    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [2])).repeat()
+    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[2])).repeat()
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
@@ -126,9 +126,20 @@ class VocabProcessor:
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
   def reset_test_generator(self):
-#    del self.test_tuple
     self.test_tuple = zip(self.X_test, self.Y_test)
-
+  
+  # TODO: Not used yet since deprecated indexCNN for v2.0
+  def cross_validate(session, split_size=5):
+    results = []
+    kf = KFold(n_splits=split_size)
+    for train_idx, val_idx in kf.split(train_x_all, train_y_all):
+      train_x = train_x_all[train_idx]
+      train_y = train_y_all[train_idx]
+      val_x = train_x_all[val_idx]
+      val_y = train_y_all[val_idx]
+      run_train(session, train_x, train_y)
+      results.append(session.run(accuracy, feed_dict={x: val_x, y: val_y}))
+    return results    
 
   """
     Expects this passed as a list of documents in memory. If not, we need to come up with a different way to read in all these docs
