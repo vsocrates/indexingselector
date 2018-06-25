@@ -36,7 +36,7 @@ DROPOUT_KEEP_PROB=0.65
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
+BATCH_SIZE = 16 # default 64
 NUM_EPOCHS = 10 # default 200
 EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
@@ -204,7 +204,6 @@ def train_CNN(train_dataset,
           except tf.errors.OutOfRangeError:
             print("We are out of range")
             break
-          # break
 
 #      if current_step % EVALUATE_EVERY == 0:
 #        print("\nEvaluation:")
@@ -257,6 +256,7 @@ def train_CNN(train_dataset,
 #            )
 
 def get_word_to_vec_model(model_path, vocab_proc):
+  vocab = vocab_proc.vocab
   matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
@@ -264,14 +264,15 @@ def get_word_to_vec_model(model_path, vocab_proc):
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((len(vocab_proc.vocab), EMBEDDING_DIM))
+  embedding_matrix = np.zeros((len(vocab), EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  max_size = min(len(model.index2word), vocab_length)
+  max_size = min(len(model.index2word), len(vocab))
 
   for word, idx in vocab.items():
-    embedding_vector = model.wv[word]
-    if embedding_vector is not None:
-      embedding_matrix[i] = embedding_vector
+    if word in model.wv:
+      embedding_vector = model.wv[word]
+      if embedding_vector is not None:
+        embedding_matrix[idx] = embedding_vector
     else:
     # I'm pretty sure something is supposed to happen here but idk what
       pass
@@ -301,7 +302,7 @@ def main(argv=None):
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor.vocab)
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor)
     train_CNN(train_dataset,
               test_dataset,
               vocab_processor,

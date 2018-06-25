@@ -36,8 +36,10 @@ class VocabProcessor:
     self.reverse_vocab = {}
 
     self.batch_size = batch_size
-    self.test_size = 1.0 - train_size
-    
+    print("batch", self.batch_size)
+    print("batch1", train_size)
+    self.test_size = round(1.0 - train_size, 2)
+    print("test: ", self.test_size)
   def next_value(self):
       self.next += 1
       return self.next
