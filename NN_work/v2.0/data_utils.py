@@ -44,8 +44,9 @@ def get_abstract_text_with_targets(elem, output_list):
   output_list.append(cit_dict)
     
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
+  global dataset_size
   cit_dict = {}
-  
+  dataset_size += 1
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
   
@@ -100,21 +101,46 @@ def get_target_list(dictList):
   for text in target_list:
     # we have to set these labels like this, otherwise softmax complains
     if text == "MEDLINE":
-      output_list.append([0,1])
+      output_list.append([1])
     elif text == "PubMed-not-MEDLINE":
-      output_list.append([1,0])
+      output_list.append([0])
   return output_list
 
+import sys
+
+def get_size(obj, seen=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(v, seen) for v in obj.values()])
+        size += sum([get_size(k, seen) for k in obj.keys()])
+    elif hasattr(obj, '__dict__'):
+        size += get_size(obj.__dict__, seen)
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(i, seen) for i in obj])
+    return size
+  
+  
 def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
+  global dataset_size
+  dataset_size = 0
   # we are timing the abstract text data pull
   start_time = time.time()
-
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
     fast_iter(context, get_abstract_text_with_targets_and_metadata, text_list)
     
   end_time = time.time()
   
+  print(get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
   np.random.shuffle(text_list)
@@ -130,7 +156,7 @@ def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_process
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
-  return train_dataset, test_dataset, count_vect, max_doc_length
+  return train_dataset, test_dataset, count_vect, max_doc_length, dataset_size
   
   
 def get_batch(data, batch_size, num_epochs, shuffle=True):

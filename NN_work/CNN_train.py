@@ -164,7 +164,6 @@ def train_CNN(train_dataset,
       """
       cnn.input_x, cnn.input_y = x_batch, y_batch
       cnn.dropout_keep_prob = DROPOUT_KEEP_PROB
-      output = sess.run(x_batch)
       
       # training op doesn't return anything
       _, step, summaries, loss, accuracy = sess.run(

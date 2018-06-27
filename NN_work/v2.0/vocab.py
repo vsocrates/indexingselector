@@ -36,12 +36,12 @@ class VocabProcessor:
     self.reverse_vocab = {}
 
     self.batch_size = batch_size
-    self.test_size = 1.0 - train_size
-    
+    self.test_size = round(1.0 - train_size, 2)
+
   def next_value(self):
-      self.next += 1
-      return self.next
-  
+    self.next += 1
+    return self.next
+
   """
     I don't know if this is the right move, but take in data of the form of a list of dict:
     With all features and raw text that we want. 
@@ -72,9 +72,9 @@ class VocabProcessor:
       
       # add numeric labels
       if doc['target'] == "MEDLINE":
-        labels.append([0,1])
+        labels.append([0.0, 1.0])
       elif doc['target'] == "PubMed-not-MEDLINE":
-        labels.append([1,0])
+        labels.append([1.0, 0.0])
       
     # we are adding start and end tags
     for doc in all_word_id_list:
@@ -97,9 +97,9 @@ class VocabProcessor:
     # these are the generators used to create the datasets
     def train_generator():
       # this one needs to run as long as we have more epochs
-      self.train_tuple = zip(self.X_train, self.Y_train)
-      data_iter = iter(self.train_tuple)
-      for x, y in data_iter:
+      # self.train_tuple = zip(self.X_train, self.Y_train)
+      # data_iter = iter(self.train_tuple)
+      for x, y in self.train_tuple:
         yield x, y
   
     # the test generator is reinitialized every time its used, so no need for infinite loop
@@ -109,20 +109,20 @@ class VocabProcessor:
     
     train_dataset = tf.data.Dataset.from_generator(train_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) )).repeat()
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
                                            
     test_dataset = tf.data.Dataset.from_generator(test_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) )).repeat()
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
-    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [2])).repeat()
-    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[2])).repeat()
+    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [2]))
+    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[2]))
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
-
+    print("tye:" , batched_train_dataset)
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
   def reset_test_generator(self):
