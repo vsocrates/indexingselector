@@ -30,8 +30,8 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 # DROPOUT_KEEP_PROB=0.65
 
 # # Training Parameters
-ALLOW_SOFT_PLACEMENT=False
-LOG_DEVICE_PLACEMENT=False
+# ALLOW_SOFT_PLACEMENT=False
+# LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 16 # default 64
 NUM_EPOCHS = 5 # default 200
@@ -44,6 +44,8 @@ from tensorflow.python.keras.models import Model
 from tensorflow.python.keras import backend
 
 from tensorflow.python import debug as tf_debug
+from tensorflow.python.keras.callbacks import CSVLogger
+from tensorflow.python.keras.callbacks import ProgbarLogger
 
 def train_CNN(train_dataset,
               test_dataset,
@@ -54,7 +56,7 @@ def train_CNN(train_dataset,
               ):
   
   sess = tf.Session()
-  sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+  # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
   backend.set_session(sess)
   
   init_op = tf.global_variables_initializer()
@@ -62,64 +64,49 @@ def train_CNN(train_dataset,
   
   with sess.as_default():
 
-                
+ 
     def make_iterator(dataset):
       while True:
-        # print("we in here")
         iterator = dataset.make_one_shot_iterator()
         next_val = iterator.get_next()
-        # print("test: ", next_val)
-        output = [n.name for n in tf.get_default_graph().as_graph_def().node]
-        print("output: ", output)
         while True:
           try:
             *inputs, labels = sess.run(next_val)
-            # print(inputs)
-            # print(labels)
             yield inputs, labels  
           except tf.errors.OutOfRangeError:
+            print("OutOfRangeError Exception Thrown")          
             break
-          except:
+          except Exception as e: 
+            print(e)
+            print("Unknown Exception Thrown")
             break
-  # iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
-                                             # train_dataset.output_shapes)
-
-  
-  # train_init_op = iterator.make_initializer(train_dataset)
-  # test_init_op = iterator.make_initializer(test_dataset)
-  # sess.run(train_init_op)
-    # iterator = train_dataset.make_one_shot_iterator()
-    # input_x, input_y = iterator.get_next()
-
-    # tf.cast(input_y, tf.float32)
 
     itr_train = make_iterator(train_dataset)
     itr_validate = make_iterator(test_dataset)
     counter = 0
-    # for x,y in itr_train:
-      # counter += 1
-      # print(x)
-      # print(y)
-    # print(counter)
-    # return
-    # # print(input_x.shape)
-    main_input = Input(shape=(max_doc_length,), dtype="int32")#, tensor=input_x, name="main_input")
+    
+    main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")#, tensor=input_x)
     embedding_layer = Embedding(input_dim=len(vocab_processor.vocab),
                                 output_dim=EMBEDDING_DIM,
                                 weights=[w2vmodel],
                                 input_length=max_doc_length,
-                                trainable=False)(main_input)
-    
-    lstm_out = Dense(4, activation='sigmoid', name='lstm')(embedding_layer)
-    auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(lstm_out)
+                                trainable=False,
+                                name="embedding")(main_input)
+    lstm_out = LSTM(32)(embedding_layer)
+    auxiliary_output = Dense(1, activation='relu', name='aux_output')(lstm_out)
     
     model = Model(inputs=main_input, outputs=auxiliary_output)
-    model.compile(optimizer='adam', loss='binary_crossentropy')
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['binary_accuracy'])
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
+    csv_logger = CSVLogger('training.log')
+    progbar = ProgbarLogger(count_mode='steps')
+
     stepsEpoch = math.floor(dataset_size / BATCH_SIZE)
-    model.fit_generator(generator=itr_train,steps_per_epoch=2, epochs=2, workers=0, use_multiprocessing=True)#, epochs=1,)  validation_data=itr_validate, validation_steps=1, 
+    print(model.summary())
+
+    model.fit_generator(generator=itr_train, validation_data=itr_validate, validation_steps=2, steps_per_epoch=1, workers=0, callbacks=[csv_logger, progbar], max_queue_size=1)#, epochs=1,)  validation_data=itr_validate, validation_steps=1, 
   # model.fit_generator([input_x], [input_y],
             # epochs=NUM_EPOCHS, steps_per_epoch=BATCH_SIZE)
 
@@ -128,7 +115,7 @@ def train_CNN(train_dataset,
             
 def get_word_to_vec_model(model_path, vocab_proc):
   vocab = vocab_proc.vocab
-  matrix_size = 50
+  matrix_size = 3000
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
   print(len(model.index2word))
@@ -157,21 +144,22 @@ def get_word_to_vec_model(model_path, vocab_proc):
       # embedding_matrix[i] = embedding_vector
   # # print(embedding_matrix[0:2])
   # # have to add one for some reason? Maybe cuz its length?
+  
   # model_length = matrix_size + 1
   # # free up the memory
   del(model)
-  
   return embedding_matrix
   
   
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
-  xml_file = "../small_data.xml"
-  # xml_file = "cits.xml"
+  # xml_file = "../small_data.xml"
+  xml_file = "../cits.xml"
   # xml_file = "pubmed_result_2012_2018.xml"
   
-  
+  np.set_printoptions(threshold=np.nan)
+
   text_list = []
 
   train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)

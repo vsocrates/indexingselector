@@ -72,10 +72,10 @@ class VocabProcessor:
       
       # add numeric labels
       if doc['target'] == "MEDLINE":
-        labels.append([0.0, 1.0])
+        labels.append([1])
       elif doc['target'] == "PubMed-not-MEDLINE":
-        labels.append([1.0, 0.0])
-      
+        labels.append([0])
+    
     # we are adding start and end tags
     for doc in all_word_id_list:
       doc.insert(0, 1)
@@ -109,16 +109,16 @@ class VocabProcessor:
     
     train_dataset = tf.data.Dataset.from_generator(train_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([1]) ))
                                            
     test_dataset = tf.data.Dataset.from_generator(test_generator,
                                            output_types= (tf.int32, tf.int32),
-                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([2]) ))
+                                           output_shapes=( tf.TensorShape([None]),tf.TensorShape([1]) ))
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
-    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [2]))
-    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[2]))
+    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [1]))
+    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[1]))
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
