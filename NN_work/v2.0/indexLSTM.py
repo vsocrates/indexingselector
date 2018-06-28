@@ -32,8 +32,8 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 10 # default 200
+BATCH_SIZE = 4 # default 64
+NUM_EPOCHS = 5 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
@@ -47,7 +47,7 @@ from tensorflow.python.keras.callbacks import CSVLogger
 from tensorflow.python.keras.callbacks import ProgbarLogger
 from tensorflow.python.keras.optimizers import SGD
 
-def train_CNN(train_dataset,
+def train_LSTM(train_dataset,
               test_dataset,
               vocab_processor,
               max_doc_length,
@@ -129,13 +129,10 @@ def train_CNN(train_dataset,
                       workers=0,
                       callbacks=[csv_logger, progbar])
                       
-
-
-          
             
 def get_word_to_vec_model(model_path, vocab_proc):
   vocab = vocab_proc.vocab
-  matrix_size = 8000
+  matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
   print(len(model.index2word))
@@ -161,9 +158,10 @@ def get_word_to_vec_model(model_path, vocab_proc):
   
   
 def main(argv=None):
-  xml_file = "../pubmed_result.xml"
+  # xml_file = "../pubmed_result.xml"
+  # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
-  # xml_file = "../small_data.xml"
+  xml_file = "../small_data.xml"
   # xml_file = "../cits.xml"
   # xml_file = "pubmed_result_2012_2018.xml"
   

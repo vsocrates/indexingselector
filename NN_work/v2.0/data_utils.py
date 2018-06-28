@@ -128,6 +128,7 @@ def get_size(obj, seen=None):
   
   
 def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
+  
   # we are timing the abstract text data pull
   start_time = time.time()
   with open(xml_file, "rb") as xmlf:
@@ -146,9 +147,12 @@ def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_process
     count_vect = premade_vocab_processor
   
   # we use nltk to word tokenize
-  count_vect = VocabProcessor(word_tokenize, batch_size, train_size)
+  count_vect = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words=True)
   # this function creates the datasets using the vocab.py file
   train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
+    
+  print(count_vect.vocab)
+  print(count_vect.token_counter)
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   

@@ -2,7 +2,6 @@
 
 from collections import defaultdict
 from collections import Counter 
-import pickle
 import itertools 
 
 try:
@@ -11,6 +10,8 @@ try:
 except ImportError:
   # pylint: disable=g-import-not-at-top
   import pickle
+  
+from nltk.corpus import stopwords 
   
 import tensorflow as tf
 from tensorflow.python.keras.preprocessing import sequence
@@ -25,7 +26,7 @@ EOS = "<EOS>"
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn, batch_size, train_size):
+  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
     self.vocab[PAD] = 0
@@ -37,6 +38,9 @@ class VocabProcessor:
 
     self.batch_size = batch_size
     self.test_size = round(1.0 - train_size, 2)
+    self.remove_stop_words = remove_stop_words
+    if remove_stop_words:
+      self.stopword_set = set(stopwords.words("english"))
 
   def next_value(self):
     self.next += 1
@@ -168,7 +172,13 @@ class VocabProcessor:
       return self.vocab[token]
 
   def tokenize(self, text):
-      return self.tokenizer(text)
+      words = self.tokenizer(text)
+    
+      # currently, the stop word removal doesn't change all the words to lowercase.
+      if self.remove_stop_words:
+        words = [word for word in words if word.lower() not in self.stopword_set]
+      
+      return words
 
   def tokens_to_id_list(self, tokens):
       return list(map(self.convert_token_to_id, tokens))
