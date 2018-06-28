@@ -44,9 +44,7 @@ def get_abstract_text_with_targets(elem, output_list):
   output_list.append(cit_dict)
     
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
-  global dataset_size
   cit_dict = {}
-  dataset_size += 1
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
   
@@ -130,8 +128,6 @@ def get_size(obj, seen=None):
   
   
 def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
-  global dataset_size
-  dataset_size = 0
   # we are timing the abstract text data pull
   start_time = time.time()
   with open(xml_file, "rb") as xmlf:
@@ -140,11 +136,11 @@ def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_process
     
   end_time = time.time()
   
-  print(get_size(text_list))
+  print("Data size (bytes): ", get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
   np.random.shuffle(text_list)
-  
+
   count_vect = None
   if premade_vocab_processor is not None:
     count_vect = premade_vocab_processor
@@ -156,7 +152,7 @@ def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_process
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
-  return train_dataset, test_dataset, count_vect, max_doc_length, dataset_size
+  return train_dataset, test_dataset, count_vect, max_doc_length, len(text_list)
   
   
 def get_batch(data, batch_size, num_epochs, shuffle=True):

@@ -95,16 +95,18 @@ class VocabProcessor:
     self.test_tuple = zip(self.X_test, self.Y_test)
   
     # these are the generators used to create the datasets
+    # Since we regulate the length of epochs, this generator needs to cycle through the data infinitely
     def train_generator():
-      # this one needs to run as long as we have more epochs
-      # self.train_tuple = zip(self.X_train, self.Y_train)
-      # data_iter = iter(self.train_tuple)
-      for x, y in self.train_tuple:
+      self.train_tuple = zip(self.X_train, self.Y_train)
+      data_iter = iter(self.train_tuple)
+      for x, y in data_iter:
         yield x, y
   
-    # the test generator is reinitialized every time its used, so no need for infinite loop
+    # Since we regulate the length of epochs, this generator needs to cycle through the data infinitely
     def test_generator():
-      for x, y in self.test_tuple:
+      self.test_tuple = zip(self.X_test, self.Y_test)
+      data_iter = iter(self.test_tuple)
+      for x, y in data_iter:
         yield x, y
     
     train_dataset = tf.data.Dataset.from_generator(train_generator,
@@ -117,12 +119,11 @@ class VocabProcessor:
     
     # We are deciding to make them all the same length, as opposed to pad based on batch. 
     # TODO: look into if this is the right thing to do for CNN    
-    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [1]))
-    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[1]))
+    batched_train_dataset = train_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length], [1])).repeat()
+    batched_test_dataset = test_dataset.padded_batch(self.batch_size, padded_shapes=([max_doc_length],[1])).repeat()
   
     # TODO: this is for if we want to map backwards, which we can do later.
     # this.update_reverse_vocab()
-    print("tye:" , batched_train_dataset)
     return batched_train_dataset, batched_test_dataset, max_doc_length
 
   def reset_test_generator(self):
