@@ -19,7 +19,7 @@ from data_utils import data_load
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
-
+REMOVE_STOP_WORDS = True
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
 # FILTER_SIZES = "3,4,5"
@@ -188,7 +188,7 @@ def main(argv=None):
   
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)
+  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS)
 
   model = None
   if PRETRAINED_W2V_PATH:

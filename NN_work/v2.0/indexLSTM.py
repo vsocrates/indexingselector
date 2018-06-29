@@ -16,10 +16,11 @@ warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 import gensim
 
 from data_utils import data_load
-from data_utils import get_batch
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
+REMOVE_STOP_WORDS = True
+MATRIX_SIZE = 8000
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -32,11 +33,11 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
+BATCH_SIZE = 4 # default 64
 NUM_EPOCHS = 10 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 from tensorflow.python.keras.layers import Input, Embedding, LSTM, Dense, Dropout
 from tensorflow.python.keras.models import Model
@@ -132,7 +133,7 @@ def train_LSTM(train_dataset,
             
 def get_word_to_vec_model(model_path, vocab_proc):
   vocab = vocab_proc.vocab
-  matrix_size = 50
+  matrix_size = MATRIX_SIZE
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
   print(len(model.index2word))
@@ -159,15 +160,15 @@ def get_word_to_vec_model(model_path, vocab_proc):
   
 def main(argv=None):
   # xml_file = "../pubmed_result.xml"
-  xml_file = "pubmed_result.xml"
+  # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
-  # xml_file = "../small_data.xml"
+  xml_file = "../small_data.xml"
   # xml_file = "../cits.xml"
   # xml_file = "pubmed_result_2012_2018.xml"
   
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)
+  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS)
 
   model = None
   if PRETRAINED_W2V_PATH:
