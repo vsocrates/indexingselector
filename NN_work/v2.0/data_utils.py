@@ -63,7 +63,6 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   
   if authors is not None:
-    # print("not none:? ", authors)
     affiliations = authors.findall(".//Affiliation")
   else:
     affiliations = []
@@ -80,6 +79,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
   cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
   
+  # print('citation: ', cit_dict)
   output_list.append(cit_dict)
     
     
@@ -151,31 +151,10 @@ def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_process
   # this function creates the datasets using the vocab.py file
   train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
     
-  print(count_vect.vocab)
-  print(count_vect.token_counter)
+  # print(count_vect.vocab)
+  # print(count_vect.token_counter)
     
   print("Vocabulary Size: {:d}".format(len(count_vect.vocab)))
   
   return train_dataset, test_dataset, count_vect, max_doc_length, len(text_list)
-  
-  
-def get_batch(data, batch_size, num_epochs, shuffle=True):
-  """
-  Generates a batch iterator for a dataset.
-  """
-  data = np.array(data)
-  data_size = len(data)
-  num_batches_per_epoch = int((len(data)-1)/batch_size) + 1
-  for epoch in range(num_epochs):
-    # Shuffle the data at each epoch cuz why not
-    if shuffle:
-      shuffle_indices = np.random.permutation(np.arange(data_size))
-      shuffled_data = data[shuffle_indices]
-    else:
-      shuffled_data = data
-    for batch_num in range(num_batches_per_epoch):
-      start_index = batch_num * batch_size
-      end_index = min((batch_num + 1) * batch_size, data_size)
-      yield shuffled_data[start_index:end_index]
-  
   
