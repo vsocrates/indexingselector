@@ -96,7 +96,7 @@ def train_LSTM(train_dataset,
   itr_train = make_iterator(train_dataset, train_batch_num)
   itr_validate = make_iterator(test_dataset, val_batch_num)
  
-  main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")#, tensor=input_x)
+  main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")
   embedding_layer = Embedding(input_dim=len(vocab_processor.vocab),
                               output_dim=EMBEDDING_DIM,
                               weights=[w2vmodel],
@@ -107,6 +107,10 @@ def train_LSTM(train_dataset,
   lstm_out = LSTM(64)(dropout1)
   dropout2 = Dropout(0.2, name="dropout2")(lstm_out)
   auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
+
+  
+  # auxiliary information
+  aux_input = Input(shape=(max_doc_length
   
   # stochastic gradient descent algo, currently unused
   opt = SGD(lr=0.01)

@@ -102,7 +102,7 @@ def train_CNN(train_dataset,
     itr_validate = make_iterator(test_dataset, val_batch_num)
    
     main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")#, tensor=input_x)
-    embedding_layer = Embedding(input_dim=len(vocab_processor.vocab),
+    embedding_layer = Embedding(input_dim=len(vocab_processor['text'].vocab),
                                 output_dim=EMBEDDING_DIM,
                                 weights=[w2vmodel],
                                 input_length=max_doc_length,
@@ -152,8 +152,8 @@ def train_CNN(train_dataset,
                         workers=0,
                         callbacks=[csv_logger, progbar])
                       
-def get_word_to_vec_model(model_path, vocab_proc):
-  vocab = vocab_proc.vocab
+def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
+  vocab = vocab_proc[vocab_proc_tag].vocab
   matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print(model.vector_size)
@@ -188,11 +188,13 @@ def main(argv=None):
   
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS)
+  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=True)
 
+  
+  
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor)
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor, "text")
     train_CNN(train_dataset,
               test_dataset,
               vocab_processor,
