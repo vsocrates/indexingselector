@@ -2,6 +2,8 @@ import time
 import sys
 import math
 import collections 
+from profilehooks import profile
+
 import lxml.etree as etree
 import numpy as np
 
@@ -15,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
 from vocab import VocabProcessor
+from conditional_decorator import conditional_decorator
 
 Datasets = collections.namedtuple('Datasets',['abs_text_train_dataset',
                                               'abs_text_test_dataset',
@@ -27,7 +30,15 @@ Datasets = collections.namedtuple('Datasets',['abs_text_train_dataset',
                                               "keyword_train_dataset",
                                               "keyword_test_dataset",
                                              ])
+Dataset_Max_Lengths = collections.namedtuple('Dataset_Max_Lengths', ["abs_text_max_length",
+                                                                     "jrnl_title_max_length",
+                                                                     "art_title_max_length",
+                                                                     "affl_max_length",
+                                                                     "keyword_max_length"
+                                                                    ])
 
+DO_TIMING_ANALYSIS = True     
+                                                               
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -69,7 +80,7 @@ def get_size(obj, seen=None):
     elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
         size += sum([get_size(i, seen) for i in obj])
     return size
-  
+
 # ------------------------- XML data loading methods/conversion to Dataset methods  ------------------------- 
 
 def fast_iter(context, func, *args, **kwargs):
@@ -146,7 +157,8 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   # print('citation: ', cit_dict)
   output_list.append(cit_dict)
-      
+
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, with_aux_info=False):
 
   # we are timing the abstract text data pull
@@ -182,7 +194,6 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, wi
     
     print("Vocabulary Size: {:d}",(vocab_proc_dict['text']))
     
-  print("train_dataset", datasets)
   return datasets, vocab_proc_dict, max_doc_length, len(text_list)
 
 """
@@ -199,6 +210,7 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, wi
     vocab: the vocabulary
     sequence_ex_list: the Dataset taken from from_tensor_slices containing all data per training example
 """
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
   vocab_processor = vocab_proc_dict['text']
   vocab_processor.reset_processor()
@@ -269,10 +281,14 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
 
   return_datasets = Datasets(batched_train_dataset, batched_test_dataset,
                              None, None, None, None, None, None, None, None)
+                             
+  all_max_lengths = Dataset_Max_Lengths(max_doc_length, None, None, None, None) 
+                              
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
-  return return_datasets, max_doc_length
+  return return_datasets, all_max_lengths
 
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=False):
   # shouldn't actually need to do this, but just in case.
   for name, processor in vocab_proc_dict.items():
@@ -500,9 +516,16 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
                                 affl_test_dataset=affl_test_dataset,
                                 keyword_train_dataset=keyword_train_dataset,
                                 keyword_test_dataset=keyword_test_dataset)
+
+  all_max_lengths = Dataset_Max_Lengths(abs_text_max_length=max_doc_length,
+                                        jrnl_title_max_length=max_jrnl_title_length,
+                                        art_title_max_length=max_art_title_length,
+                                        affl_max_length=max_affl_length,
+                                        keyword_max_length=max_keyword_length
+                                       ) 
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
-  return return_datasets, max_doc_length
+  return return_datasets, all_max_lengths
   
 
   

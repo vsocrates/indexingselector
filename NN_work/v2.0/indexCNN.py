@@ -1,5 +1,6 @@
 import os
 import string
+from profilehooks import profile
 
 import numpy as np
 
@@ -17,10 +18,12 @@ import gensim
 
 from data_utils import data_load
 from data_utils import Datasets
+from conditional_decorator import conditional_decorator
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
+WITH_AUX_INFO = True
 MATRIX_SIZE = 8000
 
 # Model Hyperparameters
@@ -35,9 +38,11 @@ ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 4 # default 64
-NUM_EPOCHS = 70 # default 200
+NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
+DEBUG = True
+DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
@@ -59,8 +64,8 @@ from tensorflow.python.keras.callbacks import ProgbarLogger
 from tensorflow.python.keras.optimizers import SGD
 
 def train_CNN(datasets,
-              vocab_processor,
-              max_doc_length,
+              vocab_processors,
+              max_doc_lengths,
               dataset_size,
               w2vmodel=None,
               ):
@@ -107,16 +112,14 @@ def train_CNN(datasets,
     train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
 
-    print("dataset_size", val_batch_num)
-    
     itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
     itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
    
-    main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")#, tensor=input_x)
-    embedding_layer = Embedding(input_dim=len(vocab_processor['text'].vocab),
+    main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
+    embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                 output_dim=EMBEDDING_DIM,
                                 weights=[w2vmodel],
-                                input_length=max_doc_length,
+                                input_length=max_doc_lengths.abs_text_max_length,
                                 trainable=False,
                                 name="embedding")(main_input)
 
@@ -149,9 +152,13 @@ def train_CNN(datasets,
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
-    csv_logger = CSVLogger('training.log')
-    progbar = ProgbarLogger(count_mode='steps')
-
+    
+    callbacks = []
+    verbosity = 2
+    if DEBUG:
+      callbacks.append(CSVLogger('training.log'))
+      callbacks.append(ProgbarLogger(count_mode='steps'))
+      verbosity = 1
     print(model.summary())
 
     model.fit_generator(generator=itr_train,
@@ -159,17 +166,18 @@ def train_CNN(datasets,
                         validation_steps=val_batch_num,
                         steps_per_epoch=train_batch_num,
                         epochs=NUM_EPOCHS,
-                        verbose=1,
+                        verbose=verbosity,
                         workers=0,
-                        callbacks=[csv_logger, progbar])
-                      
+                        callbacks=callbacks)
+                        
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)                      
 def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
   vocab = vocab_proc[vocab_proc_tag].vocab
   matrix_size = MATRIX_SIZE
 
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  print(model.vector_size)
-  print(len(model.index2word))
+  print("Embedding Dims: ", model.vector_size)
+  print("Number of Tokens in Model: ", len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
@@ -194,21 +202,19 @@ def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
 def main(argv=None):  
   text_list = []
 
-  datasets, vocab_processors, max_doc_length, dataset_sizes = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=False)
-
-  print(datasets)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
   
   model = None
   if PRETRAINED_W2V_PATH:
     model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processors, "text")
     train_CNN(datasets,
               vocab_processors,
-              max_doc_length,
-              dataset_sizes,
+              max_doc_lengths,
+              dataset_size,
               w2vmodel=model,
               )
   else:
-    train_CNN(datasets, vocab_processors, max_doc_length, dataset_sizes)
+    train_CNN(datasets, vocab_processors, max_doc_lengths, dataset_size)
       
       
 if __name__ == '__main__':

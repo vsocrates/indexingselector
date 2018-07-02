@@ -1,5 +1,6 @@
 import os
 import string
+from profilehooks import profile
 
 import numpy as np
 
@@ -16,16 +17,16 @@ warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 import gensim
 
 from data_utils import data_load
+from conditional_decorator import conditional_decorator
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
+WITH_AUX_INFO = True
 MATRIX_SIZE = 8000
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
-# FILTER_SIZES = "3,4,5"
-# NUM_FILTERS= 128 # this is per filter size; default = 128
 # L2_REG_LAMBDA=0.0 # L2 regularization lambda
 # DROPOUT_KEEP_PROB=0.65
 
@@ -34,10 +35,22 @@ ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 4 # default 64
-NUM_EPOCHS = 10 # default 200
+NUM_EPOCHS = 3 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
+DEBUG = True
+DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
+
+# Data files
+# xml_file = "../pubmed_result.xml"
+# xml_file = "pubmed_result.xml"
+# xml_file = "small_data.xml"
+xml_file = "../small_data.xml"
+# xml_file = "../cits.xml"
+# xml_file = "pubmed_result_2012_2018.xml"
+# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
+
 
 from tensorflow.python.keras.layers import Input, Embedding, LSTM, Dense, Dropout
 from tensorflow.python.keras.models import Model
@@ -48,10 +61,9 @@ from tensorflow.python.keras.callbacks import CSVLogger
 from tensorflow.python.keras.callbacks import ProgbarLogger
 from tensorflow.python.keras.optimizers import SGD
 
-def train_LSTM(train_dataset,
-              test_dataset,
-              vocab_processor,
-              max_doc_length,
+def train_LSTM(datasets,
+              vocab_processors,
+              max_doc_lengths,
               dataset_size,
               w2vmodel=None,
               ):
@@ -93,14 +105,14 @@ def train_LSTM(train_dataset,
 
   print(train_batch_num)
   
-  itr_train = make_iterator(train_dataset, train_batch_num)
-  itr_validate = make_iterator(test_dataset, val_batch_num)
+  itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
+  itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
  
-  main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")
-  embedding_layer = Embedding(input_dim=len(vocab_processor.vocab),
+  main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")
+  embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                               output_dim=EMBEDDING_DIM,
                               weights=[w2vmodel],
-                              input_length=max_doc_length,
+                              input_length=max_doc_lengths.abs_text_max_length,
                               trainable=False,
                               name="embedding")(main_input)
   dropout1 = Dropout(0.2, name="dropout1")(embedding_layer)
@@ -110,7 +122,7 @@ def train_LSTM(train_dataset,
 
   
   # auxiliary information
-  aux_input = Input(shape=(max_doc_length
+  aux_input = Input(shape=(max_doc_lengths.affl_max_length,))
   
   # stochastic gradient descent algo, currently unused
   opt = SGD(lr=0.01)
@@ -120,9 +132,12 @@ def train_LSTM(train_dataset,
   # model._make_predict_function()
                 # will be useful when we actually combine
                 # loss_weights=[1., 0.2]
-  csv_logger = CSVLogger('training.log')
-  progbar = ProgbarLogger(count_mode='steps')
-
+  callbacks = []
+  verbosity = 2
+  if DEBUG:
+    callbacks.append(CSVLogger('training.log'))
+    callbacks.append(ProgbarLogger(count_mode='steps'))
+    verbosity = 1
   print(model.summary())
 
   model.fit_generator(generator=itr_train,
@@ -130,17 +145,18 @@ def train_LSTM(train_dataset,
                       validation_steps=val_batch_num,
                       steps_per_epoch=train_batch_num,
                       epochs=NUM_EPOCHS,
-                      verbose=1,
+                      verbose=verbosity,
                       workers=0,
-                      callbacks=[csv_logger, progbar])
+                      callbacks=callbacks)
                       
-            
-def get_word_to_vec_model(model_path, vocab_proc):
-  vocab = vocab_proc.vocab
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)            
+def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
+  vocab = vocab_proc[vocab_proc_tag].vocab
   matrix_size = MATRIX_SIZE
+  
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  print(model.vector_size)
-  print(len(model.index2word))
+  print("Embedding Dims: ", model.vector_size)
+  print("Number of Tokens in Model: ", len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
@@ -163,29 +179,21 @@ def get_word_to_vec_model(model_path, vocab_proc):
   
   
 def main(argv=None):
-  # xml_file = "../pubmed_result.xml"
-  # xml_file = "pubmed_result.xml"
-  # xml_file = "small_data.xml"
-  xml_file = "../small_data.xml"
-  # xml_file = "../cits.xml"
-  # xml_file = "pubmed_result_2012_2018.xml"
-  
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor)
-    train_LSTM(train_dataset,
-              test_dataset,
-              vocab_processor,
-              max_doc_length,
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processors, "text")
+    train_LSTM(datasets,
+              vocab_processors,
+              max_doc_lengths,
               dataset_size,
               w2vmodel=model,
               )
   else:
-    train_LSTM(train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size)
+    train_LSTM(datasets, vocab_processors, max_doc_lengths, dataset_size)
       
       
 if __name__ == '__main__':
