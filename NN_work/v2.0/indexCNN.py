@@ -16,6 +16,7 @@ warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 import gensim
 
 from data_utils import data_load
+from data_utils import Datasets
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
@@ -33,11 +34,20 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
+BATCH_SIZE = 4 # default 64
 NUM_EPOCHS = 70 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+
+# Data files
+# xml_file = "../pubmed_result.xml"
+# xml_file = "pubmed_result.xml"
+# xml_file = "small_data.xml"
+xml_file = "../small_data.xml"
+# xml_file = "../cits.xml"
+# xml_file = "pubmed_result_2012_2018.xml"
+# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 from tensorflow.python.keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
 from tensorflow.python.keras.models import Model
@@ -48,8 +58,7 @@ from tensorflow.python.keras.callbacks import CSVLogger
 from tensorflow.python.keras.callbacks import ProgbarLogger
 from tensorflow.python.keras.optimizers import SGD
 
-def train_CNN(train_dataset,
-              test_dataset,
+def train_CNN(datasets,
               vocab_processor,
               max_doc_length,
               dataset_size,
@@ -98,10 +107,10 @@ def train_CNN(train_dataset,
     train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
 
-    print(train_batch_num)
+    print("dataset_size", val_batch_num)
     
-    itr_train = make_iterator(train_dataset, train_batch_num)
-    itr_validate = make_iterator(test_dataset, val_batch_num)
+    itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
+    itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
    
     main_input = Input(shape=(max_doc_length,), dtype="int32", name="main_input")#, tensor=input_x)
     embedding_layer = Embedding(input_dim=len(vocab_processor['text'].vocab),
@@ -182,32 +191,24 @@ def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
   return embedding_matrix
   
   
-def main(argv=None):
-  # xml_file = "../pubmed_result.xml"
-  xml_file = "pubmed_result.xml"
-  # xml_file = "small_data.xml"
-  # xml_file = "../small_data.xml"
-  # xml_file = "../cits.xml"
-  # xml_file = "pubmed_result_2012_2018.xml"
-  
+def main(argv=None):  
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=True)
+  datasets, vocab_processors, max_doc_length, dataset_sizes = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=False)
 
-  
+  print(datasets)
   
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor, "text")
-    train_CNN(train_dataset,
-              test_dataset,
-              vocab_processor,
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processors, "text")
+    train_CNN(datasets,
+              vocab_processors,
               max_doc_length,
-              dataset_size,
+              dataset_sizes,
               w2vmodel=model,
               )
   else:
-    train_CNN(train_dataset, test_dataset, vocab_processor, max_doc_length, dataset_size)
+    train_CNN(datasets, vocab_processors, max_doc_length, dataset_sizes)
       
       
 if __name__ == '__main__':

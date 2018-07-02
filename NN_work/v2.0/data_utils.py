@@ -1,6 +1,7 @@
 import time
 import sys
 import math
+import collections 
 import lxml.etree as etree
 import numpy as np
 
@@ -15,6 +16,17 @@ from sklearn.utils import shuffle
 
 from vocab import VocabProcessor
 
+Datasets = collections.namedtuple('Datasets',['abs_text_train_dataset',
+                                              'abs_text_test_dataset',
+                                              "jrnl_title_train_dataset",
+                                              "jrnl_title_test_dataset",
+                                              "art_title_train_dataset",
+                                              "art_title_test_dataset",
+                                              "affl_train_dataset",
+                                              "affl_test_dataset",
+                                              "keyword_train_dataset",
+                                              "keyword_test_dataset",
+                                             ])
 
 def get_text_list(dictList):
   output_list = []
@@ -136,7 +148,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   output_list.append(cit_dict)
       
 def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, with_aux_info=False):
-  
+
   # we are timing the abstract text data pull
   start_time = time.time()
   with open(xml_file, "rb") as xmlf:
@@ -157,30 +169,21 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, wi
     for name in ["text", "journal_title", "article_title", "affiliations", "keywords"]:
       vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words)
       
-    abs_text_train_dataset, jrnl_title_train_dataset, \
-    art_title_train_dataset, affl_train_dataset, keyword_train_dataset, \
-    abs_text_test_dataset, jrnl_title_test_dataset, \
-    art_title_test_dataset, affl_test_dataset, keyword_test_dataset \
-    max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list)
     
-    return abs_text_train_dataset, jrnl_title_train_dataset, \
-    art_title_train_dataset, affl_train_dataset, keyword_train_dataset, \
-    abs_text_test_dataset, jrnl_title_test_dataset, \
-    art_title_test_dataset, affl_test_dataset, keyword_test_dataset \
-    max_doc_length, len(text_list)
+    datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list)
   else:
     count_vect = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words)
     # this function creates the datasets using the vocab.py file
     vocab_proc_dict = {"text":count_vect}
-    train_dataset, test_dataset, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list)
+    datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list)
     
   # print(count_vect.vocab)
   # print(count_vect.token_counter)
     
     print("Vocabulary Size: {:d}",(vocab_proc_dict['text']))
     
-    print("train_dataset", train_dataset)
-    return train_dataset, test_dataset, vocab_proc_dict, max_doc_length, len(text_list)
+  print("train_dataset", datasets)
+  return datasets, vocab_proc_dict, max_doc_length, len(text_list)
 
 """
   I don't know if this is the right move, but take in data of the form of a list of dict:
@@ -264,9 +267,11 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
   batched_train_dataset = train_dataset.padded_batch(vocab_processor.batch_size, padded_shapes=([max_doc_length], [1])).repeat()
   batched_test_dataset = test_dataset.padded_batch(vocab_processor.batch_size, padded_shapes=([max_doc_length],[1])).repeat()
 
+  return_datasets = Datasets(batched_train_dataset, batched_test_dataset,
+                             None, None, None, None, None, None, None, None)
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
-  return batched_train_dataset, batched_test_dataset, max_doc_length
+  return return_datasets, max_doc_length
 
 def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=False):
   # shouldn't actually need to do this, but just in case.
@@ -484,13 +489,20 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
 
   keyword_train_dataset = keyword_train_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length], [1]))
   keyword_test_dataset = keyword_test_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length],[1]))
-  
-  
+
+  return_datasets = Datasets(abs_text_train_dataset=abs_text_train_dataset,
+                                abs_text_test_dataset=abs_text_test_dataset,
+                                jrnl_title_train_dataset=jrnl_title_train_dataset,
+                                jrnl_title_test_dataset=jrnl_title_test_dataset,
+                                art_title_train_dataset=art_title_train_dataset,
+                                art_title_test_dataset=art_title_test_dataset,
+                                affl_train_dataset=affl_train_dataset,
+                                affl_test_dataset=affl_test_dataset,
+                                keyword_train_dataset=keyword_train_dataset,
+                                keyword_test_dataset=keyword_test_dataset)
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
-  return abs_text_train_dataset, jrnl_title_train_dataset, art_title_train_dataset, affl_train_dataset, keyword_train_dataset, \
-  abs_text_test_dataset, jrnl_title_test_dataset, art_title_test_dataset, affl_test_dataset, keyword_test_dataset \
-  max_doc_length
+  return return_datasets, max_doc_length
   
 
   
