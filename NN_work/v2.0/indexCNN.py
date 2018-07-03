@@ -1,21 +1,33 @@
+# Vanilla Python
 import os
 import string
 from profilehooks import profile
 
+# Numpy
 import numpy as np
 
+# Tensorflow
 import tensorflow as tf
-from tensorflow.python.keras.preprocessing import sequence
 from tensorboard import summary as summary_lib
-
+from tensorflow.python import debug as tf_debug
 tf.logging.set_verbosity(tf.logging.INFO)
 print(tf.__version__)
 
+# Keras
+from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
+from keras.models import Model
+from keras import backend
+
+from keras.callbacks import CSVLogger
+from keras.callbacks import ProgbarLogger
+from keras.optimizers import SGD
+
+# gensim
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
-
 import gensim
 
+# own modules 
 from data_utils import data_load
 from data_utils import Datasets
 from conditional_decorator import conditional_decorator
@@ -34,14 +46,14 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 # DROPOUT_KEEP_PROB=0.65
 
 # # Training Parameters
-ALLOW_SOFT_PLACEMENT=False
+ALLOW_SOFT_PLACEMENT=True
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 4 # default 64
+BATCH_SIZE = 2 # default 64
 NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = False
+DEBUG = True
 DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
@@ -53,15 +65,6 @@ xml_file = "../small_data.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
 # PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
 PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
-
-from tensorflow.python.keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras import backend
-
-from tensorflow.python import debug as tf_debug
-from tensorflow.python.keras.callbacks import CSVLogger
-from tensorflow.python.keras.callbacks import ProgbarLogger
-from tensorflow.python.keras.optimizers import SGD
 
 def train_CNN(datasets,
               vocab_processors,
@@ -111,7 +114,9 @@ def train_CNN(datasets,
 
     train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
-
+    print("train_batch_num", train_batch_num)
+    print("val_batch_num", val_batch_num)
+    print("data: ", datasets.abs_text_test_dataset)
     itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
     itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
    
@@ -167,8 +172,8 @@ def train_CNN(datasets,
                         steps_per_epoch=train_batch_num,
                         epochs=NUM_EPOCHS,
                         verbose=verbosity,
-                        workers=0,
-                        callbacks=callbacks)
+                        workers=0,)
+                        #callbacks=callbacks)
                         
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)                      
 def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
