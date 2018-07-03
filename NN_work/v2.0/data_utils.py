@@ -37,7 +37,7 @@ Dataset_Max_Lengths = collections.namedtuple('Dataset_Max_Lengths', ["abs_text_m
                                                                      "keyword_max_length"
                                                                     ])
 
-DO_TIMING_ANALYSIS = True 
+DO_TIMING_ANALYSIS = False 
                                                                
 def get_text_list(dictList):
   output_list = []

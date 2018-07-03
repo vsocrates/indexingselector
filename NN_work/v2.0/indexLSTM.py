@@ -36,7 +36,7 @@ from keras.optimizers import SGD
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 50
+MATRIX_SIZE = 9000
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -47,22 +47,22 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 2 # default 64
-NUM_EPOCHS = 5 # default 200
+BATCH_SIZE = 64 # default 64
+NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = True
+DEBUG = False
 DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
-# xml_file = "pubmed_result.xml"
+xml_file = "pubmed_result.xml"
 # xml_file = "small_data.xml"
-xml_file = "../small_data.xml"
+# xml_file = "../small_data.xml"
 # xml_file = "../cits.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
-# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
-PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
+PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+# PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 def train_LSTM(datasets,
               vocab_processors,
@@ -96,18 +96,18 @@ def train_LSTM(datasets,
               *inputs, labels = sess.run(next_val)
               yield inputs, labels  
             except tf.errors.OutOfRangeError:
-              print("OutOfRangeError Exception Thrown")          
+              if DEBUG:
+                print("OutOfRangeError Exception Thrown")          
               break
             except Exception as e: 
-              print(e)
-              print("Unknown Exception Thrown")
+              if DEBUG:
+                print(e)
+                print("Unknown Exception Thrown")
               break
 
   train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
   val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
 
-  print(train_batch_num)
-  
   itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
   itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
  

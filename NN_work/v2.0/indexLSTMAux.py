@@ -1,29 +1,43 @@
+# Vanilla Python
 import os
 import string
 from profilehooks import profile
 
+# Numpy
 import numpy as np
 
+# Tensorflow
 import tensorflow as tf
 from tensorflow.python.keras.preprocessing import sequence
 from tensorboard import summary as summary_lib
-
 tf.logging.set_verbosity(tf.logging.INFO)
 print(tf.__version__)
+from tensorflow.python import debug as tf_debug
 
+# Gensim
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
-
 import gensim
 
+# Own Modules
 from data_utils import data_load
 from conditional_decorator import conditional_decorator
+
+# Keras
+from keras.layers import Input, Embedding, LSTM, Dense, Dropout, Concatenate
+from keras.models import Model
+from keras import backend
+
+from keras.callbacks import CSVLogger
+from keras.callbacks import ProgbarLogger
+from keras.optimizers import SGD
+
 
 # Data loading Parameters
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 50
+MATRIX_SIZE = 9000
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -34,32 +48,22 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 4 # default 64
+BATCH_SIZE = 64 # default 64
 NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = True
+DEBUG = False
 DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
-# xml_file = "pubmed_result.xml"
+xml_file = "pubmed_result.xml"
 # xml_file = "small_data.xml"
-xml_file = "../small_data.xml"
+# xml_file = "../small_data.xml"
 # xml_file = "../cits.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
-# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
-PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
-
-
-from tensorflow.python.keras.layers import Input, Embedding, LSTM, Dense, Dropout, Concatenate
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras import backend
-
-from tensorflow.python import debug as tf_debug
-from tensorflow.python.keras.callbacks import CSVLogger
-from tensorflow.python.keras.callbacks import ProgbarLogger
-from tensorflow.python.keras.optimizers import SGD
+PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+# PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 def train_LSTM(datasets,
               vocab_processors,
@@ -104,14 +108,14 @@ def train_LSTM(datasets,
                 labels_out.append(labels)
                 # yield inputs, labels  
               except tf.errors.OutOfRangeError:
-                print("OutOfRangeError Exception Thrown")          
+                if DEBUG:
+                  print("OutOfRangeError Exception Thrown")          
                 break
               except Exception as e: 
-                print(e)
-                print("Unknown Exception Thrown")
+                if DEBUG:
+                  print(e)
+                  print("Unknown Exception Thrown")
                 break
-            # print("value_list: ", value_list)
-            # print("label" , labels_out)
             yield value_list, labels_out
             
   train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1

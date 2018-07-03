@@ -36,7 +36,7 @@ from conditional_decorator import conditional_decorator
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 50
+MATRIX_SIZE = 9000
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -49,17 +49,17 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 2 # default 64
-NUM_EPOCHS = 2 # default 200
+BATCH_SIZE = 64 # default 64
+NUM_EPOCHS = 3 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = True
-DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
+DEBUG = False
+DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
-# xml_file = "pubmed_result.xml"
-xml_file = "small_data.xml"
+xml_file = "pubmed_result.xml"
+# xml_file = "small_data.xml"
 # xml_file = "../small_data.xml"
 # xml_file = "../cits.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
@@ -74,8 +74,8 @@ def train_CNN(datasets,
               ):
 
   # Model Hyperparameters
-  filter_sizes = (2,4)#,5)
-  num_filters = 5#100
+  filter_sizes = (2,4,5)
+  num_filters = 100
   dropout_prob = (0.5, 0.8)
   hidden_dims = 50
        
@@ -105,18 +105,17 @@ def train_CNN(datasets,
               *inputs, labels = sess.run(next_val)
               yield inputs, labels  
             except tf.errors.OutOfRangeError:
-              print("OutOfRangeError Exception Thrown")          
+              if DEBUG:
+                print("OutOfRangeError Exception Thrown")          
               break
             except Exception as e: 
-              print(e)
-              print("Unknown Exception Thrown")
+              if DEBUG:
+                print(e)
+                print("Unknown Exception Thrown")
               break
 
     train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
-    print("train_batch_num", train_batch_num)
-    print("val_batch_num", val_batch_num)
-    print("data: ", datasets.abs_text_test_dataset)
     itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
     itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
    
