@@ -46,7 +46,7 @@ EMBEDDING_DIM = 200 # default 128, pretrained => 200
 # DROPOUT_KEEP_PROB=0.65
 
 # # Training Parameters
-ALLOW_SOFT_PLACEMENT=True
+ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 2 # default 64
@@ -54,17 +54,17 @@ NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 DEBUG = True
-DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
+DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
 # xml_file = "pubmed_result.xml"
-# xml_file = "small_data.xml"
-xml_file = "../small_data.xml"
+xml_file = "small_data.xml"
+# xml_file = "../small_data.xml"
 # xml_file = "../cits.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
-# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
-PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
+PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+# PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 def train_CNN(datasets,
               vocab_processors,
