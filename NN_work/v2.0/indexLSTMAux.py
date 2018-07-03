@@ -23,7 +23,7 @@ from conditional_decorator import conditional_decorator
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 8000
+MATRIX_SIZE = 50
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -35,11 +35,11 @@ ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
 # NUM_CHECKPOINTS = 5 # default 5
 BATCH_SIZE = 4 # default 64
-NUM_EPOCHS = 3 # default 200
+NUM_EPOCHS = 2 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
 DEBUG = True
-DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
+DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
@@ -52,7 +52,7 @@ xml_file = "../small_data.xml"
 PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 
-from tensorflow.python.keras.layers import Input, Embedding, LSTM, Dense, Dropout
+from tensorflow.python.keras.layers import Input, Embedding, LSTM, Dense, Dropout, Concatenate
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras import backend
 
@@ -84,29 +84,42 @@ def train_LSTM(datasets,
   
   with sess.as_default():
   
-    def make_iterator(dataset, batch_num):
+    def make_multiple_iterator(dataset_list, batch_num):
         while True:
-          iterator = dataset.make_one_shot_iterator()
-          next_val = iterator.get_next()
+          itr_list = []
+          next_val_list = []
+          for dataset in dataset_list:
+            iterator = dataset.make_one_shot_iterator()
+            itr_list.append(iterator)
+            next_val_list.append(iterator.get_next())
+          # iterator = dataset.make_one_shot_iterator()
+          # next_val = iterator.get_next() 
           for i in range(batch_num):
-            try:
-              *inputs, labels = sess.run(next_val)
-              yield inputs, labels  
-            except tf.errors.OutOfRangeError:
-              print("OutOfRangeError Exception Thrown")          
-              break
-            except Exception as e: 
-              print(e)
-              print("Unknown Exception Thrown")
-              break
-
+            value_list  = []
+            labels_out = []
+            for vals in next_val_list:
+              try:
+                *inputs, labels = sess.run(vals)
+                value_list.append(inputs[0])
+                labels_out = labels
+                # yield inputs, labels  
+              except tf.errors.OutOfRangeError:
+                print("OutOfRangeError Exception Thrown")          
+                break
+              except Exception as e: 
+                print(e)
+                print("Unknown Exception Thrown")
+                break
+            print("value_list: ", value_list)
+            print("label" , labels_out)
+            yield value_list[0],value_list[1], labels_out
+            
   train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
   val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
-
-  print(train_batch_num)
   
-  itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
-  itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
+  itr_train_abs = make_multiple_iterator([datasets.abs_text_train_dataset,datasets.affl_train_dataset], train_batch_num)
+  itr_validate_abs = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset], val_batch_num)
+  
  
   main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")
   embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
@@ -120,11 +133,28 @@ def train_LSTM(datasets,
   dropout2 = Dropout(0.2, name="dropout2")(lstm_out)
   auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
+  # auxiliary information
+  aux_input = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
+  affl_embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
+                              output_dim=EMBEDDING_DIM,
+                              input_length=max_doc_lengths.abs_text_max_length,
+                              name="affl_embedding")(aux_input)
+  dropout3 = Dropout(0.2, name="dropout3")(affl_embedding_layer)
+  aux_lstm_out = LSTM(64)(dropout3)
+  dropout4 = Dropout(0.2, name="dropout4")(aux_lstm_out)
+  
+  concat = Concatenate()([dropout4, dropout2])
+  x = Dense(64, activation='relu')(concat)
+  x = Dense(64, activation='relu')(x)
+  x = Dense(64, activation='relu')(x)
+
+  # And finally we add the main logistic regression layer
+  main_output = Dense(1, activation='sigmoid', name='main_output')(x)
   
   # stochastic gradient descent algo, currently unused
   opt = SGD(lr=0.01)
 
-  model = Model(inputs=main_input, outputs=auxiliary_output)
+  model = Model(inputs=[main_input,aux_input] , outputs=[main_output, auxiliary_output])
   model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
   # model._make_predict_function()
                 # will be useful when we actually combine
@@ -137,8 +167,8 @@ def train_LSTM(datasets,
     verbosity = 1
   print(model.summary())
 
-  model.fit_generator(generator=itr_train,
-                      validation_data=itr_validate,
+  model.fit_generator(generator=itr_train_abs,
+                      validation_data=itr_validate_abs,
                       validation_steps=val_batch_num,
                       steps_per_epoch=train_batch_num,
                       epochs=NUM_EPOCHS,
