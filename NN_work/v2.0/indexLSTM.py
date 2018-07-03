@@ -23,7 +23,7 @@ from conditional_decorator import conditional_decorator
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 8000
+MATRIX_SIZE = 50
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
@@ -38,8 +38,8 @@ BATCH_SIZE = 4 # default 64
 NUM_EPOCHS = 3 # default 200
 # EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 # CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = True
-DO_TIMING_ANALYSIS = True # Make sure to change in data_utils too
+DEBUG = False
+DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 
 # Data files
 # xml_file = "../pubmed_result.xml"
