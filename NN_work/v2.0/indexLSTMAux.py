@@ -101,7 +101,7 @@ def train_LSTM(datasets,
               try:
                 *inputs, labels = sess.run(vals)
                 value_list.append(inputs[0])
-                labels_out = labels
+                labels_out.append(labels)
                 # yield inputs, labels  
               except tf.errors.OutOfRangeError:
                 print("OutOfRangeError Exception Thrown")          
@@ -110,9 +110,9 @@ def train_LSTM(datasets,
                 print(e)
                 print("Unknown Exception Thrown")
                 break
-            print("value_list: ", value_list)
-            print("label" , labels_out)
-            yield value_list[0],value_list[1], labels_out
+            # print("value_list: ", value_list)
+            # print("label" , labels_out)
+            yield value_list, labels_out
             
   train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
   val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
@@ -163,7 +163,7 @@ def train_LSTM(datasets,
   verbosity = 2
   if DEBUG:
     callbacks.append(CSVLogger('training.log'))
-    callbacks.append(ProgbarLogger(count_mode='steps'))
+    # callbacks.append(ProgbarLogger(count_mode='steps'))
     verbosity = 1
   print(model.summary())
 

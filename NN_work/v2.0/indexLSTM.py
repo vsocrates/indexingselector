@@ -23,7 +23,7 @@ from conditional_decorator import conditional_decorator
 TRAIN_SET_PERCENTAGE = 0.9
 REMOVE_STOP_WORDS = True
 WITH_AUX_INFO = True
-MATRIX_SIZE = 9000
+MATRIX_SIZE = 50
 
 # Model Hyperparameters
 EMBEDDING_DIM = 200 # default 128, pretrained => 200
