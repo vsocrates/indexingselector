@@ -51,8 +51,8 @@ DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
 xml_file = "../small_data.xml"
 # xml_file = "../cits.xml"
 # xml_file = "pubmed_result_2012_2018.xml"
-PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
-# PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
+# PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
+PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
 
 from tensorflow.python.keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
 from tensorflow.python.keras.models import Model
@@ -71,7 +71,7 @@ def train_CNN(datasets,
               ):
 
   # Model Hyperparameters
-  filter_sizes = (2)#,4,5)
+  filter_sizes = (2,4)#,5)
   num_filters = 5#100
   dropout_prob = (0.5, 0.8)
   hidden_dims = 50
