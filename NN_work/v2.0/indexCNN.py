@@ -206,9 +206,8 @@ def parse_arguments():
   
   # Stdout params
   global DEBUG
-  global DO_TIMING_ANALYSIS # Make sure to change in data_utils too
        
-
+  # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
   global ALLOW_SOFT_PLACEMENT
   ALLOW_SOFT_PLACEMENT=False
   global LOG_DEVICE_PLACEMENT
@@ -244,10 +243,8 @@ def parse_arguments():
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
-  parser.add_argument("-i", "--timing-analysis", help="perform and output timing on certain methods", action="store_true")
   
   arguments = parser.parse_args()
-  print(arguments)
   XML_FILE = arguments.data_file
   PRETRAINED_W2V_PATH = arguments.w2v_path
   WITH_AUX_INFO = arguments.get_aux_info
@@ -264,19 +261,16 @@ def parse_arguments():
   filter_size_string = arguments.filter_sizes
   filters = re.findall('\d+', filter_size_string)
   FILTER_SIZES = [int(f) for f in filters]
-  print("FILTER_SIZES", FILTER_SIZES)
   NUM_FILTERS = arguments.num_filters# this is per filter size; default = 128
   # L2_REG_LAMBDA=0.0 # L2 regularization lambda
   dropout_prob_string = arguments.dropout_prob
   
   dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", dropout_prob_string)
   DROPOUT_KEEP_PROB = [float(d) for d in dropouts]
-  print("DROPOUT_KEEP_PROB", DROPOUT_KEEP_PROB)
   HIDDEN_DIMS = arguments.hidden_dims
   
   # Stdout params
   DEBUG = arguments.debug
-  DO_TIMING_ANALYSIS = arguments.timing_analysis # Make sure to change in data_utils too
 
 
       

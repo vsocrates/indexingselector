@@ -1,5 +1,7 @@
 # Vanilla Python
 import os
+import re
+import argparse
 import string
 from profilehooks import profile
 
@@ -32,38 +34,7 @@ from keras.callbacks import CSVLogger
 from keras.callbacks import ProgbarLogger
 from keras.optimizers import SGD
 
-
-# Data loading Parameters
-TRAIN_SET_PERCENTAGE = 0.9
-REMOVE_STOP_WORDS = True
-WITH_AUX_INFO = True
-MATRIX_SIZE = 9000
-
-# Model Hyperparameters
-EMBEDDING_DIM = 200 # default 128, pretrained => 200
-# L2_REG_LAMBDA=0.0 # L2 regularization lambda
-# DROPOUT_KEEP_PROB=0.65
-
-# # Training Parameters
-ALLOW_SOFT_PLACEMENT=False
-LOG_DEVICE_PLACEMENT=False
-# NUM_CHECKPOINTS = 5 # default 5
-BATCH_SIZE = 64 # default 64
-NUM_EPOCHS = 2 # default 200
-# EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
-# CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
-DEBUG = False
-DO_TIMING_ANALYSIS = False # Make sure to change in data_utils too
-
-# Data files
-# xml_file = "../pubmed_result.xml"
-xml_file = "pubmed_result.xml"
-# xml_file = "small_data.xml"
-# xml_file = "../small_data.xml"
-# xml_file = "../cits.xml"
-# xml_file = "pubmed_result_2012_2018.xml"
-PRETRAINED_W2V_PATH = "PubMed-and-PMC-w2v.bin"
-# PRETRAINED_W2V_PATH = "../PubMed-and-PMC-w2v.bin"
+DO_TIMING_ANALYSIS = False
 
 def train_LSTM(datasets,
               vocab_processors,
@@ -132,9 +103,9 @@ def train_LSTM(datasets,
                               input_length=max_doc_lengths.abs_text_max_length,
                               trainable=False,
                               name="embedding")(main_input)
-  dropout1 = Dropout(0.2, name="dropout1")(embedding_layer)
-  lstm_out = LSTM(64)(dropout1)
-  dropout2 = Dropout(0.2, name="dropout2")(lstm_out)
+  dropout1 = Dropout(MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+  lstm_out = LSTM(MAIN_LSTM_SIZE)(dropout1)
+  dropout2 = Dropout(MAIN_DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
   auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
   # auxiliary information
@@ -143,14 +114,14 @@ def train_LSTM(datasets,
                               output_dim=EMBEDDING_DIM,
                               input_length=max_doc_lengths.abs_text_max_length,
                               name="affl_embedding")(aux_input)
-  dropout3 = Dropout(0.2, name="dropout3")(affl_embedding_layer)
-  aux_lstm_out = LSTM(64)(dropout3)
-  dropout4 = Dropout(0.2, name="dropout4")(aux_lstm_out)
+  dropout3 = Dropout(AUX_DROPOUT_KEEP_PROB[0], name="dropout3")(affl_embedding_layer)
+  aux_lstm_out = LSTM(AUX_LSTM_SIZE)(dropout3)
+  dropout4 = Dropout(AUX_DROPOUT_KEEP_PROB[1], name="dropout4")(aux_lstm_out)
   
   concat = Concatenate()([dropout4, dropout2])
-  x = Dense(64, activation='relu')(concat)
-  x = Dense(64, activation='relu')(x)
-  x = Dense(64, activation='relu')(x)
+  x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(concat)
+  x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(x)
+  x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(x)
 
   # And finally we add the main logistic regression layer
   main_output = Dense(1, activation='sigmoid', name='main_output')(x)
@@ -207,12 +178,12 @@ def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
   # # free up the memory
   del(model)
   return embedding_matrix
-  
-  
+
+
 def main(argv=None):
   text_list = []
 
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
 
   model = None
   if PRETRAINED_W2V_PATH:
@@ -225,7 +196,102 @@ def main(argv=None):
               )
   else:
     train_LSTM(datasets, vocab_processors, max_doc_lengths, dataset_size)
-      
-      
+
+
+def parse_arguments():
+  # Data loading Parameters
+  global XML_FILE#  = "pubmed_result.xml"
+  global PRETRAINED_W2V_PATH# = "PubMed-and-PMC-w2v.bin"
+  global WITH_AUX_INFO
+  global MATRIX_SIZE#  = 9000
+
+  # Model Hyperparameters
+  global REMOVE_STOP_WORDS
+  global TRAIN_SET_PERCENTAGE#  = 0.9
+  
+  global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
+  global BATCH_SIZE 
+  global NUM_EPOCHS
+  
+  global MAIN_LSTM_SIZE
+  global AUX_LSTM_SIZE
+  global MAIN_DROPOUT_KEEP_PROB
+  global AUX_DROPOUT_KEEP_PROB
+  global COMBI_DENSE_LAYER_DIM
+  
+  # Stdout params
+  global DEBUG
+       
+  # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
+  global ALLOW_SOFT_PLACEMENT
+  ALLOW_SOFT_PLACEMENT=False
+  global LOG_DEVICE_PLACEMENT
+  LOG_DEVICE_PLACEMENT=False
+ 
+  def restricted_float(x):
+      x = float(x)
+      if x < 0.0 or x > 1.0:
+          raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
+      return x
+
+  parser = argparse.ArgumentParser()
+
+  # Data loading params
+  parser.add_argument("-f", "--data-file", help="location of data file", required=True)
+  parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
+  parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
+  parser.add_argument("-ws", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
+
+  # Model hyperparams  
+  parser.add_argument("-sw" "--remove-stop-words", help="flag to remove stop words from abstracts", action="store_true")
+  parser.add_argument("-t", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
+  
+  parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
+  parser.add_argument("-b", "--batch-size", help="set the batch size", type=int, default=64)
+  parser.add_argument("-e", "--num-epochs", help="the number of epochs to train", type=int, default=200)
+  
+  parser.add_argument("-ml", "--main-lstm-dim", help="dimensionality of the MAIN lstm layer", type=int, default=64)
+  parser.add_argument("-al", "--aux-lstm-dim", help="dimensionality of the AUX lstm layer", type=int, default=64) 
+  parser.add_argument("-mdp", "--main-dropout-prob", help='probability of dropout for MAIN 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
+  parser.add_argument("-adp", "--aux-dropout-prob", help='probability of dropout for AUX 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
+  parser.add_argument("-dd", "--dense-dim", help="dimensionality combined data dense layer", type=int, default=64) 
+  
+
+  # Stdout params
+  parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
+  
+  arguments = parser.parse_args()
+
+  XML_FILE = arguments.data_file
+  PRETRAINED_W2V_PATH = arguments.w2v_path
+  WITH_AUX_INFO = arguments.get_aux_info
+  MATRIX_SIZE = arguments.word2vec_size
+
+  # Model Hyperparameters
+  REMOVE_STOP_WORDS = arguments.sw__remove_stop_words
+  TRAIN_SET_PERCENTAGE = arguments.train_percentage
+  
+  EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
+  BATCH_SIZE = arguments.batch_size
+  NUM_EPOCHS = arguments.num_epochs
+  
+  MAIN_LSTM_SIZE = arguments.main_lstm_dim
+  AUX_LSTM_SIZE = arguments.aux_lstm_dim
+  
+  main_dropout_prob_string = arguments.main_dropout_prob
+  dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", main_dropout_prob_string)
+  MAIN_DROPOUT_KEEP_PROB = [float(d) for d in dropouts]
+  
+  aux_dropout_prob_string = arguments.aux_dropout_prob
+  dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", aux_dropout_prob_string)
+  AUX_DROPOUT_KEEP_PROB = [float(d) for d in dropouts]  
+
+  COMBI_DENSE_LAYER_DIM = arguments.dense_dim
+  
+  # Stdout params
+  DEBUG = arguments.debug
+
+
 if __name__ == '__main__':
+  parse_arguments()
   tf.app.run(main=main)

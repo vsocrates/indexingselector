@@ -1,6 +1,8 @@
 # Vanilla python
 import os
+import re
 import string
+import argparse
 from profilehooks import profile
 
 # Numpy
@@ -11,7 +13,7 @@ import tensorflow as tf
 from tensorboard import summary as summary_lib
 from tensorflow.python import debug as tf_debug
 tf.logging.set_verbosity(tf.logging.INFO)
-print(tf.__version__)
+# print(tf.__version__)
 
 # Gensim
 import warnings
@@ -30,6 +32,8 @@ from keras import backend
 from keras.callbacks import CSVLogger
 from keras.callbacks import ProgbarLogger
 from keras.optimizers import SGD
+
+DO_TIMING_ANALYSIS = False 
 
 def train_LSTM(datasets,
               vocab_processors,
@@ -85,9 +89,9 @@ def train_LSTM(datasets,
                               input_length=max_doc_lengths.abs_text_max_length,
                               trainable=False,
                               name="embedding")(main_input)
-  dropout1 = Dropout(0.2, name="dropout1")(embedding_layer)
-  lstm_out = LSTM(64)(dropout1)
-  dropout2 = Dropout(0.2, name="dropout2")(lstm_out)
+  dropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+  lstm_out = LSTM(LSTM_SIZE)(dropout1)
+  dropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
   auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
   
@@ -147,7 +151,7 @@ def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
 def main(argv=None):
   text_list = []
 
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
 
   model = None
   if PRETRAINED_W2V_PATH:
@@ -174,25 +178,20 @@ def parse_arguments():
   
   global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
   global BATCH_SIZE 
-  global NUM_EPOCHS 
-  global FILTER_SIZES
-  global NUM_FILTERS # this is per filter size; default = 128
-  # L2_REG_LAMBDA=0.0 # L2 regularization lambda
+  global NUM_EPOCHS
+  
+  global LSTM_SIZE
   global DROPOUT_KEEP_PROB
-  global HIDDEN_DIMS
   
   # Stdout params
   global DEBUG
-  global DO_TIMING_ANALYSIS # Make sure to change in data_utils too
        
-
+  # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
   global ALLOW_SOFT_PLACEMENT
   ALLOW_SOFT_PLACEMENT=False
   global LOG_DEVICE_PLACEMENT
   LOG_DEVICE_PLACEMENT=False
-       
-
-
+ 
   def restricted_float(x):
       x = float(x)
       if x < 0.0 or x > 1.0:
@@ -214,17 +213,14 @@ def parse_arguments():
   parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
   parser.add_argument("-b", "--batch-size", help="set the batch size", type=int, default=64)
   parser.add_argument("-e", "--num-epochs", help="the number of epochs to train", type=int, default=200)
-  parser.add_argument("-fs", "--filter-sizes", help='list of filter sizes [e.g. "(2,3,4)"]', default='"(2,4,5)"')
-  parser.add_argument("-n", "--num-filters", help="number of filters per size", type=int, default=100)
+  parser.add_argument("-ls", "--lstm-dim", help="dimensionality of the lstm layer", type=int, default=64)
   parser.add_argument("-dp", "--dropout-prob", help='probability of dropout for 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
-  parser.add_argument("-hd", "--hidden-dims", help="number of hidden nodes in the last dense layer", type=int, default=50)
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
-  parser.add_argument("-i", "--timing-analysis", help="perform and output timing on certain methods", action="store_true")
   
   arguments = parser.parse_args()
-  print(arguments)
+
   XML_FILE = arguments.data_file
   PRETRAINED_W2V_PATH = arguments.w2v_path
   WITH_AUX_INFO = arguments.get_aux_info
@@ -238,22 +234,14 @@ def parse_arguments():
   BATCH_SIZE = arguments.batch_size
   NUM_EPOCHS = arguments.num_epochs
   
-  filter_size_string = arguments.filter_sizes
-  filters = re.findall('\d+', filter_size_string)
-  FILTER_SIZES = [int(f) for f in filters]
-  print("FILTER_SIZES", FILTER_SIZES)
-  NUM_FILTERS = arguments.num_filters# this is per filter size; default = 128
-  # L2_REG_LAMBDA=0.0 # L2 regularization lambda
-  dropout_prob_string = arguments.dropout_prob
+  LSTM_SIZE = arguments.lstm_dim
   
+  dropout_prob_string = arguments.dropout_prob
   dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", dropout_prob_string)
   DROPOUT_KEEP_PROB = [float(d) for d in dropouts]
-  print("DROPOUT_KEEP_PROB", DROPOUT_KEEP_PROB)
-  HIDDEN_DIMS = arguments.hidden_dims
   
   # Stdout params
   DEBUG = arguments.debug
-  DO_TIMING_ANALYSIS = arguments.timing_analysis # Make sure to change in data_utils too
       
 if __name__ == '__main__':
   parse_arguments()
