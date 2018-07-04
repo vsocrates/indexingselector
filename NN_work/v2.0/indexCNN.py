@@ -136,8 +136,8 @@ def train_CNN(datasets,
                         steps_per_epoch=train_batch_num,
                         epochs=NUM_EPOCHS,
                         verbose=verbosity,
-                        workers=0,)
-                        #callbacks=callbacks)
+                        workers=0,
+                        callbacks=callbacks)
                         
   
 def main(argv=None):  

@@ -546,7 +546,6 @@ def get_word_to_vec_model(model_path, matrix_size, embedding_dim, vocab_proc, vo
   max_size = min(len(model.index2word), len(vocab))
 
   for word, idx in vocab.items():
-    # print(word)
     if word in model.wv:
       embedding_vector = model.wv[word]
       if embedding_vector is not None:
