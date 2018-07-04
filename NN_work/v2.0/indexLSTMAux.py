@@ -23,6 +23,7 @@ import gensim
 
 # Own Modules
 from data_utils import data_load
+from data_utils import get_word_to_vec_model
 from conditional_decorator import conditional_decorator
 
 # Keras
@@ -150,34 +151,6 @@ def train_LSTM(datasets,
                       verbose=verbosity,
                       workers=0,
                       callbacks=callbacks)
-                      
-@conditional_decorator(profile, DO_TIMING_ANALYSIS)            
-def get_word_to_vec_model(model_path, vocab_proc, vocab_proc_tag):
-  vocab = vocab_proc[vocab_proc_tag].vocab
-  matrix_size = MATRIX_SIZE
-  
-  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  print("Embedding Dims: ", model.vector_size)
-  print("Number of Tokens in Model: ", len(model.index2word))
-  # store the embeddings in a numpy array
-  
-  # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((len(vocab), EMBEDDING_DIM))
-  # for i in range(len(model.wv.vocab)):
-  max_size = min(len(model.index2word), len(vocab))
-
-  for word, idx in vocab.items():
-    if word in model.wv:
-      embedding_vector = model.wv[word]
-      if embedding_vector is not None:
-        embedding_matrix[idx] = embedding_vector
-    else:
-    # I'm pretty sure something is supposed to happen here but idk what
-      pass
-    
-  # # free up the memory
-  del(model)
-  return embedding_matrix
 
 
 def main(argv=None):
@@ -187,7 +160,7 @@ def main(argv=None):
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processors, "text")
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, MATRIX_SIZE, EMBEDDING_DIM, vocab_processors, "text")
     train_LSTM(datasets,
               vocab_processors,
               max_doc_lengths,

@@ -2,7 +2,9 @@ import time
 import sys
 import math
 import collections 
+
 from profilehooks import profile
+import gensim 
 
 import lxml.etree as etree
 import numpy as np
@@ -527,6 +529,34 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
   
+# ------------------------- W2V Gensim Loading Method  ------------------------- 
 
+@conditional_decorator(profile, DO_TIMING_ANALYSIS)            
+def get_word_to_vec_model(model_path, matrix_size, embedding_dim, vocab_proc, vocab_proc_tag):
+  vocab = vocab_proc[vocab_proc_tag].vocab
   
+  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
+  print("Embedding Dims: ", model.vector_size)
+  print("Number of Tokens in Model: ", len(model.index2word))
+  # store the embeddings in a numpy array
+  
+  # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
+  embedding_matrix = np.zeros((len(vocab), embedding_dim))
+  # for i in range(len(model.wv.vocab)):
+  max_size = min(len(model.index2word), len(vocab))
+
+  for word, idx in vocab.items():
+    # print(word)
+    if word in model.wv:
+      embedding_vector = model.wv[word]
+      if embedding_vector is not None:
+        embedding_matrix[idx] = embedding_vector
+    else:
+    # I'm pretty sure something is supposed to happen here but idk what
+      pass
+    
+  # # free up the memory
+  del(model)
+  return embedding_matrix
+
   
