@@ -119,3 +119,6 @@ NN_work/runs/
 
 # don't want those word2vec binaries
 *.bin
+
+# ignore specifically the pubmed-and-pmc txt doc
+PubMed-and-PMC-w2v.txt
