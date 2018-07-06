@@ -171,6 +171,7 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, wi
     
   end_time = time.time()
   
+  print("Num of data points: ", len(text_list))
   print("Data size (bytes): ", get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   

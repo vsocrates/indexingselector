@@ -34,6 +34,10 @@ from data_utils import data_load
 from data_utils import Datasets
 from data_utils import get_word_to_vec_model
 from conditional_decorator import conditional_decorator
+from confusion_matrix_classes import BinaryTruePositives
+from confusion_matrix_classes import BinaryTrueNegatives
+from confusion_matrix_classes import BinaryFalsePositives 
+from confusion_matrix_classes import BinaryFalseNegatives
 
 DO_TIMING_ANALYSIS = False
 
@@ -117,7 +121,17 @@ def train_CNN(datasets,
     opt = SGD(lr=0.01)
 
     model = Model(inputs=main_input, outputs=model_output)
-    model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
+    
+    truepos_metricfn = BinaryTruePositives()
+    trueneg_metricfn = BinaryTrueNegatives()
+    falsepos_metricfn = BinaryFalsePositives()
+    falseneg_metricfn = BinaryFalseNegatives()
+    
+    model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy',
+                                                                         truepos_metricfn,
+                                                                         trueneg_metricfn,
+                                                                         falsepos_metricfn,
+                                                                         falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
@@ -126,7 +140,7 @@ def train_CNN(datasets,
     verbosity = 2
     if DEBUG:
       callbacks.append(CSVLogger('training.log'))
-      callbacks.append(ProgbarLogger(count_mode='steps'))
+      # callbacks.append(ProgbarLogger(count_mode='steps'))
       verbosity = 1
     print(model.summary())
 
@@ -138,6 +152,11 @@ def train_CNN(datasets,
                         verbose=verbosity,
                         workers=0,
                         callbacks=callbacks)
+                        
+    if SAVE_MODEL:
+      outxml_path = XML_FILE.split("/")[1]
+      outw2v_path = PRETRAINED_W2V_PATH("/")[1]
+      model.save("CNN_" + XML_FILE + "_" + PRETRAINED_W2V_PATH + "_saved_model")
                         
   
 def main(argv=None):  
@@ -179,7 +198,8 @@ def parse_arguments():
   
   # Stdout params
   global DEBUG
-       
+  global SAVE_MODEL
+  
   # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
   global ALLOW_SOFT_PLACEMENT
   ALLOW_SOFT_PLACEMENT=False
@@ -216,7 +236,8 @@ def parse_arguments():
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
-  
+  parser.add_argument("-sv", "--save", help="saves the model after training", action="store_true")
+
   arguments = parser.parse_args()
   XML_FILE = arguments.data_file
   PRETRAINED_W2V_PATH = arguments.w2v_path
@@ -244,7 +265,7 @@ def parse_arguments():
   
   # Stdout params
   DEBUG = arguments.debug
-
+  SAVE_MODEL = arguments.save
 
       
 if __name__ == '__main__':
