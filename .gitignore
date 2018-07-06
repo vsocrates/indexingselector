@@ -122,3 +122,8 @@ NN_work/runs/
 
 # ignore specifically the pubmed-and-pmc txt doc
 PubMed-and-PMC-w2v.txt
+PubMed-and-PMC-w2v-50dim.txt
+
+# don't need any model files, we'll pull those in ourselves
+*.h5
+
