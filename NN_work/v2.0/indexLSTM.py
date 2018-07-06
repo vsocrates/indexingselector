@@ -24,6 +24,10 @@ import gensim
 from data_utils import data_load
 from data_utils import get_word_to_vec_model
 from conditional_decorator import conditional_decorator
+from confusion_matrix_classes import BinaryTruePositives
+from confusion_matrix_classes import BinaryTrueNegatives
+from confusion_matrix_classes import BinaryFalsePositives 
+from confusion_matrix_classes import BinaryFalseNegatives
 
 # Keras
 from keras.layers import Input, Embedding, LSTM, Dense, Dropout
@@ -77,55 +81,64 @@ def train_LSTM(datasets,
                 print("Unknown Exception Thrown")
               break
 
-  train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
-  val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
+    train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
+    val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
 
-  itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
-  itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
- 
-  main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")
-  embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
-                              output_dim=EMBEDDING_DIM,
-                              weights=[w2vmodel],
-                              input_length=max_doc_lengths.abs_text_max_length,
-                              trainable=False,
-                              name="embedding")(main_input)
-  dropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
-  lstm_out = LSTM(LSTM_SIZE)(dropout1)
-  dropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
-  auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
+    itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
+    itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
+   
+    main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")
+    embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
+                                output_dim=EMBEDDING_DIM,
+                                weights=[w2vmodel],
+                                input_length=max_doc_lengths.abs_text_max_length,
+                                trainable=False,
+                                name="embedding")(main_input)
+    dropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+    lstm_out = LSTM(LSTM_SIZE)(dropout1)
+    dropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
+    auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
-  
-  # stochastic gradient descent algo, currently unused
-  opt = SGD(lr=0.01)
+    
+    # stochastic gradient descent algo, currently unused
+    opt = SGD(lr=0.01)
 
-  model = Model(inputs=main_input, outputs=auxiliary_output)
-  model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
-  # model._make_predict_function()
-                # will be useful when we actually combine
-                # loss_weights=[1., 0.2]
-  callbacks = []
-  verbosity = 2
-  if DEBUG:
-    callbacks.append(CSVLogger('training.log'))
-    # callbacks.append(ProgbarLogger(count_mode='steps'))
-    verbosity = 1
-  print(model.summary())
+    model = Model(inputs=main_input, outputs=auxiliary_output)
+    
+    truepos_metricfn = BinaryTruePositives()
+    trueneg_metricfn = BinaryTrueNegatives()
+    falsepos_metricfn = BinaryFalsePositives()
+    falseneg_metricfn = BinaryFalseNegatives()
+    
+    model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy',                                                                     truepos_metricfn,
+                                                                         trueneg_metricfn,
+                                                                         falsepos_metricfn,
+                                                                         falseneg_metricfn])
+    # model._make_predict_function()
+                  # will be useful when we actually combine
+                  # loss_weights=[1., 0.2]
+    callbacks = []
+    verbosity = 2
+    if DEBUG:
+      callbacks.append(CSVLogger('training.log'))
+      # callbacks.append(ProgbarLogger(count_mode='steps'))
+      verbosity = 1
+    print(model.summary())
 
-  model.fit_generator(generator=itr_train,
-                      validation_data=itr_validate,
-                      validation_steps=val_batch_num,
-                      steps_per_epoch=train_batch_num,
-                      epochs=NUM_EPOCHS,
-                      verbose=verbosity,
-                      workers=0,
-                      callbacks=callbacks)
+    model.fit_generator(generator=itr_train,
+                        validation_data=itr_validate,
+                        validation_steps=val_batch_num,
+                        steps_per_epoch=train_batch_num,
+                        epochs=NUM_EPOCHS,
+                        verbose=verbosity,
+                        workers=0,
+                        callbacks=callbacks)
 
-  if SAVE_MODEL:
-    pattern = re.compile(r"[^\/]*$")
-    outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
-    outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
-    model.save("LSTM_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
+    if SAVE_MODEL:
+      pattern = re.compile(r"[^\/]*$")
+      outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
+      outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
+      model.save("LSTM_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
                       
 
 def main(argv=None):
