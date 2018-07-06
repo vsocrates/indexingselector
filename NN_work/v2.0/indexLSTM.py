@@ -108,7 +108,7 @@ def train_LSTM(datasets,
   verbosity = 2
   if DEBUG:
     callbacks.append(CSVLogger('training.log'))
-    callbacks.append(ProgbarLogger(count_mode='steps'))
+    # callbacks.append(ProgbarLogger(count_mode='steps'))
     verbosity = 1
   print(model.summary())
 
@@ -120,6 +120,12 @@ def train_LSTM(datasets,
                       verbose=verbosity,
                       workers=0,
                       callbacks=callbacks)
+
+  if SAVE_MODEL:
+    pattern = re.compile(r"[^\/]*$")
+    outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
+    outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
+    model.save("LSTM_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
                       
 
 def main(argv=None):
@@ -159,7 +165,8 @@ def parse_arguments():
   
   # Stdout params
   global DEBUG
-       
+  global SAVE_MODEL
+  
   # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
   global ALLOW_SOFT_PLACEMENT
   ALLOW_SOFT_PLACEMENT=False
@@ -192,6 +199,7 @@ def parse_arguments():
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
+  parser.add_argument("-sv", "--save", help="saves the model after training", action="store_true")
   
   arguments = parser.parse_args()
 
@@ -216,6 +224,7 @@ def parse_arguments():
   
   # Stdout params
   DEBUG = arguments.debug
+  SAVE_MODEL = arguments.save
       
 if __name__ == '__main__':
   parse_arguments()
