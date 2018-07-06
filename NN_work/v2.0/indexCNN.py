@@ -154,9 +154,10 @@ def train_CNN(datasets,
                         callbacks=callbacks)
                         
     if SAVE_MODEL:
-      outxml_path = XML_FILE.split("/")[1]
-      outw2v_path = PRETRAINED_W2V_PATH("/")[1]
-      model.save("CNN_" + XML_FILE + "_" + PRETRAINED_W2V_PATH + "_saved_model")
+      pattern = re.compile(r"[^\/]*$")
+      outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
+      outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
+      model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
                         
   
 def main(argv=None):  
