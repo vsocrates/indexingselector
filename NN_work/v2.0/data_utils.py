@@ -161,7 +161,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, with_aux_info=False):
+def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, should_stem, with_aux_info=False):
 
   # we are timing the abstract text data pull
   start_time = time.time()
@@ -182,20 +182,18 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, wi
   if with_aux_info:
     # because there are 5 things we want (including raw abstract text)
     for name in ["text", "journal_title", "article_title", "affiliations", "keywords"]:
-      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words)
+      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem)
       
     
     datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list)
   else:
-    count_vect = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words)
+    count_vect = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem)
     # this function creates the datasets using the vocab.py file
     vocab_proc_dict = {"text":count_vect}
     datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list)
-    
-  # print(count_vect.vocab)
-  # print(count_vect.token_counter)
-    
-    print("Vocabulary Size: {:d}",(vocab_proc_dict['text']))
+        
+  print("Vocabulary Size: ", len(vocab_proc_dict['text'].vocab))
+  # print("vocab", vocab_proc_dict['text'].token_counter)
     
   return datasets, vocab_proc_dict, max_doc_length, len(text_list)
 

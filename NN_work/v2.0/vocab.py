@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from collections import Counter 
+from string import punctuation
 import itertools 
 
 try:
@@ -12,6 +13,7 @@ except ImportError:
   import pickle
   
 from nltk.corpus import stopwords 
+from nltk.stem.snowball import EnglishStemmer
   
 import tensorflow as tf
 from tensorflow.python.keras.preprocessing import sequence
@@ -26,7 +28,7 @@ EOS = "<EOS>"
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words):
+  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words, should_stem):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
     self.vocab[PAD] = 0
@@ -39,9 +41,15 @@ class VocabProcessor:
     self.batch_size = batch_size
     self.test_size = round(1.0 - train_size, 2)
     self.remove_stop_words = remove_stop_words
+    self.should_stem = should_stem
+    
     if remove_stop_words:
-      self.stopword_set = set(stopwords.words("english"))
-
+      remove_words = stopwords.words("english") + list(punctuation)
+      self.remove_word_set = set(remove_words)
+      # adding punctuation from the same flag
+    if self.should_stem:
+      self.stemmer = EnglishStemmer()
+      
   def next_value(self):
     self.next += 1
     return self.next
@@ -73,13 +81,15 @@ class VocabProcessor:
       self.token_counter[token] += 1
       return self.vocab[token]
 
+  # does more than just tokenization
   def tokenize(self, text):
       words = self.tokenizer(text)
     
       # currently, the stop word removal doesn't change all the words to lowercase.
       if self.remove_stop_words:
-        words = [word for word in words if word.lower() not in self.stopword_set]
-      
+        words = [word for word in words if word.lower() not in self.remove_word_set]
+      if self.should_stem:
+        words = [self.stemmer.stem(word) for word in words]
       return words
 
   def tokens_to_id_list(self, tokens):

@@ -144,7 +144,7 @@ def train_LSTM(datasets,
 def main(argv=None):
   text_list = []
 
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, with_aux_info=WITH_AUX_INFO)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, SHOULD_STEM, with_aux_info=WITH_AUX_INFO)
 
   model = None
   if PRETRAINED_W2V_PATH:
@@ -167,6 +167,7 @@ def parse_arguments():
 
   # Model Hyperparameters
   global REMOVE_STOP_WORDS
+  global SHOULD_STEM
   global TRAIN_SET_PERCENTAGE#  = 0.9
   
   global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
@@ -198,21 +199,22 @@ def parse_arguments():
   parser.add_argument("-f", "--data-file", help="location of data file", required=True)
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
-  parser.add_argument("-ws", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
+  parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
 
   # Model hyperparams  
-  parser.add_argument("-sw" "--remove-stop-words", help="flag to remove stop words from abstracts", action="store_true")
-  parser.add_argument("-t", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
+  parser.add_argument("-o" "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
+  parser.add_argument("-t" "--stem-words", help="flag to stem words in abstracts", action="store_true")  
+  parser.add_argument("-p", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
   
   parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
   parser.add_argument("-b", "--batch-size", help="set the batch size", type=int, default=64)
   parser.add_argument("-e", "--num-epochs", help="the number of epochs to train", type=int, default=200)
-  parser.add_argument("-ls", "--lstm-dim", help="dimensionality of the lstm layer", type=int, default=64)
-  parser.add_argument("-dp", "--dropout-prob", help='probability of dropout for 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
+  parser.add_argument("-s", "--lstm-dim", help="dimensionality of the lstm layer", type=int, default=64)
+  parser.add_argument("-r", "--dropout-prob", help='probability of dropout for 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
-  parser.add_argument("-sv", "--save", help="saves the model after training", action="store_true")
+  parser.add_argument("-a", "--save", help="saves the model after training", action="store_true")
   
   arguments = parser.parse_args()
 
@@ -222,7 +224,8 @@ def parse_arguments():
   MATRIX_SIZE = arguments.word2vec_size
 
   # Model Hyperparameters
-  REMOVE_STOP_WORDS = arguments.sw__remove_stop_words
+  REMOVE_STOP_WORDS = arguments.o__remove_stop_words
+  SHOULD_STEM = arguments.t__stem_words
   TRAIN_SET_PERCENTAGE = arguments.train_percentage
   
   EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
