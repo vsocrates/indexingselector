@@ -148,8 +148,6 @@ class BinaryFalseNegatives(keras.layers.Layer):
         y_true = K.cast(y_true, 'int32')
         y_pred = K.cast(K.round(y_pred), 'int32')
         false_neg = K.cast(K.sum(K.cast(K.greater(y_pred, y_true), 'int32')), 'int32')
-        print(y_true)
-        print(y_pred)
         current_false_neg = self.false_negatives * 1
         self.add_update(K.update_add(self.false_negatives,
                                      false_neg),

@@ -182,8 +182,15 @@ def train_CNN(datasets,
                   # loss_weights=[1., 0.2]
     
     callbacks = []
+    # callbacks.append(EarlyStopping(monitor="val_))
+    callbacks.append(ReduceLROnPlateau())
+    # Tensorboard in this version of Keras, broken. Need to update to latest version
+    # callbacks.append(TensorBoard())
+    callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
+    
     verbosity = 2
     if DEBUG:
+      callbacks = []
       callbacks.append(CSVLogger('indexCNNAux_training.log'))
       # callbacks.append(ProgbarLogger(count_mode='steps'))
       verbosity = 1
@@ -270,8 +277,8 @@ def parse_arguments():
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
 
   # Model hyperparams  
-  parser.add_argument("-o" "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
-  parser.add_argument("-t" "--stem-words", help="flag to stem words in abstracts", action="store_true")
+  parser.add_argument("-o", "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
+  parser.add_argument("-t", "--stem-words", help="flag to stem words in abstracts", action="store_true")
   parser.add_argument("-p", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
   
   parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
@@ -293,8 +300,8 @@ def parse_arguments():
   MATRIX_SIZE = arguments.word2vec_size
 
   # Model Hyperparameters
-  REMOVE_STOP_WORDS = arguments.o__remove_stop_words
-  SHOULD_STEM = arguments.t__stem_words
+  REMOVE_STOP_WORDS = arguments.remove_stop_words
+  SHOULD_STEM = arguments.stem_words
   TRAIN_SET_PERCENTAGE = arguments.train_percentage
   
   EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
