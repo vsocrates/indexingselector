@@ -36,6 +36,11 @@ from keras import backend
 
 from keras.callbacks import CSVLogger
 from keras.callbacks import ProgbarLogger
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ReduceLROnPlateau
+from keras.callbacks import TensorBoard
+from keras.callbacks import ModelCheckpoint
+
 from keras.optimizers import SGD
 
 DO_TIMING_ANALYSIS = False 

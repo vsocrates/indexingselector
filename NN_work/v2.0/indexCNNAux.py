@@ -22,6 +22,11 @@ from keras import backend
 
 from keras.callbacks import CSVLogger
 from keras.callbacks import ProgbarLogger
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ReduceLROnPlateau
+from keras.callbacks import TensorBoard
+from keras.callbacks import ModelCheckpoint
+
 from keras.optimizers import SGD
 
 # gensim
@@ -136,27 +141,32 @@ def train_CNN(datasets,
                                 input_length=max_doc_lengths.affl_max_length,
                                 name="affl_embedding")(aux_input)
 
+    affl_embedding_layer = Flatten()(affl_embedding_layer)
     auxdropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="auxdropout1")(affl_embedding_layer)
 
-    # Auxuiliary Convolutional block
-    aux_conv_blocks = []
-    for sz in FILTER_SIZES:
-      aux_conv_name = "auxconv1D-%s" % sz
-      aux_conv = Convolution1D(filters=NUM_FILTERS,
-                           kernel_size=sz,
-                           padding="valid",
-                           activation="relu",
-                           strides=1,
-                           name=aux_conv_name)(auxdropout1)
-      aux_conv = MaxPooling1D(pool_size=2)(aux_conv)
-      aux_conv = Flatten()(aux_conv)
-      aux_conv_blocks.append(aux_conv)
-    aux_conv_blocks_concat = Concatenate()(aux_conv_blocks) if len(aux_conv_blocks) > 1 else aux_conv_blocks[0]
+    
+    # # Auxuiliary Convolutional block
+    # aux_conv_blocks = []
+    # for sz in FILTER_SIZES:
+      # aux_conv_name = "auxconv1D-%s" % sz
+      # aux_conv = Convolution1D(filters=NUM_FILTERS,
+                           # kernel_size=sz,
+                           # padding="valid",
+                           # activation="relu",
+                           # strides=1,
+                           # name=aux_conv_name)(auxdropout1)
+      # aux_conv = MaxPooling1D(pool_size=2)(aux_conv)
+      # aux_conv = Flatten()(aux_conv)
+      # aux_conv_blocks.append(aux_conv)
+    # aux_conv_blocks_concat = Concatenate()(aux_conv_blocks) if len(aux_conv_blocks) > 1 else aux_conv_blocks[0]
 
-    auxdropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="auxdropout2")(aux_conv_blocks_concat)
+    # auxdropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="auxdropout2")(aux_conv_blocks_concat)
 
+    
+    
+    
     # Merge layers and into dense for final output
-    concat = Concatenate()([dropout2, auxdropout2])
+    concat = Concatenate()([dropout2, auxdropout1])
     
     dense = Dense(HIDDEN_DIMS, activation="relu")(concat)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
