@@ -4,6 +4,7 @@ import string
 import re
 import argparse
 from profilehooks import profile
+import time 
 
 # Numpy
 import numpy as np
@@ -146,7 +147,8 @@ def train_CNN(datasets,
     callbacks.append(ReduceLROnPlateau())
     # Tensorboard in this version of Keras, broken. Need to update to latest version
     # callbacks.append(TensorBoard())
-    callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
+    timestr = time.strftime("%Y%m%d%H%M%S")
+    callbacks.append(ModelCheckpoint(timestr + "CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
 
     verbosity = 2
     if DEBUG:
@@ -170,7 +172,7 @@ def train_CNN(datasets,
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
       outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
-      model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
+      model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model" + timestr + ".h5")
                         
   
 def main(argv=None):  

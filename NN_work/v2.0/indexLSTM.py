@@ -4,6 +4,7 @@ import re
 import string
 import argparse
 from profilehooks import profile
+import time 
 
 # Numpy
 import numpy as np
@@ -102,7 +103,8 @@ def train_LSTM(datasets,
     dropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
     lstm_out = LSTM(LSTM_SIZE)(dropout1)
     dropout2 = Dropout(DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
-    auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
+    dense = Dense(50, activation="relu")(dropout2)
+    auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dense)
 
     
     # stochastic gradient descent algo, currently unused

@@ -4,6 +4,7 @@ import re
 import argparse
 import string
 from profilehooks import profile
+import time
 
 # Numpy
 import numpy as np
