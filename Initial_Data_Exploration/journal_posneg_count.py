@@ -24,7 +24,6 @@ def fast_iter(context, func, *args, **kwargs):
 
 
 def get_journals(elem, output_list, nlm_ids, journal_metadata):
-  global counter
   journal_title_element = elem.find(".//Title")
   medline_cit_tag = elem.find(".//MedlineCitation")
   
@@ -55,7 +54,7 @@ def get_journals(elem, output_list, nlm_ids, journal_metadata):
         output_list[nlm_uid]['broad_list'] = "UNK"
     if "name" not in output_list[nlm_uid]:
       output_list[nlm_uid]['name'] = journal_title_element.text
-    counter += 1
+      
   else:
     print("We have no Title for some reason???")
   
@@ -67,25 +66,45 @@ def get_text_list(dictList):
 
 
 def main():
-  global counter
-  counter = 0
+    
   # this one is the larger one
   xml_file = "pubmed_result.xml"
   # xml_file = "cits.xml"
   # xml_file = "small_data.xml"
 
-  output_fname = "count_by_journal_2014-2018.csv"
+  output_fname = "pos_neg_by_journal_2014-2018.csv"
 
+  # this one is my theoretical one
+  # journal_data_fname = "journal_metadata.csv"
+  # this one is Jim's
+  journal_data_fname = "JournalInfo_fromPubMed.csv"
+ 
+  journal_list = {}
+  journal_metadata = {}
+  journal_metadata_nlmids = []
+  # from Jim's file. comment this out if you use the journal_metadata_parser.py to create a file (unfinished)
+  with open(journal_data_fname, "rt") as jdata_xml:
+    jrnl_reader = csv.reader(jdata_xml, delimiter=",")
+    # row[0] = nlmid
+    # row[1] = short name
+    # row[2] = long name
+    # row[3] = publication country
+    # row[4] = language
+    # row[5] = BroadJournalHeadingList (semicolon separated)
+    for row in jrnl_reader:
+      journal_metadata_nlmids.append(row[0])
+      journal_metadata[str(row[0])] = {"short_name":row[1],
+                                       "long_name":row[2],
+                                       "pub_country": row[3],
+                                       "language":row[4],
+                                       "broad_list":row[5]
+                                      }
   
   print("Starting Journal count on %s" % xml_file)
 
-  journal_list = {}
-  
   with open(xml_file, "rb") as xmlf:
     context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(context, get_journals, journal_list)
-  
-  print("number of journals: ", counter)
+    fast_iter(context, get_journals, journal_list, journal_metadata_nlmids, journal_metadata)
   
   with open(output_fname, "w", newline="") as csvfile:
     print("Writing to file: %s" % output_fname)  
