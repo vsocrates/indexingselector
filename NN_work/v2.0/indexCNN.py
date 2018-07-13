@@ -29,6 +29,7 @@ from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
 
 from keras.optimizers import SGD
+from keras.optimizers import Adam
 
 # gensim
 import warnings
@@ -125,7 +126,7 @@ def train_CNN(datasets,
 
     # stochastic gradient descent algo, currently unused
     # opt = SGD(lr=0.01)
-
+    opt = Adam(lr=LEARNING_RATE)
     model = Model(inputs=main_input, outputs=model_output)
     
     truepos_metricfn = BinaryTruePositives()
@@ -133,7 +134,7 @@ def train_CNN(datasets,
     falsepos_metricfn = BinaryFalsePositives()
     falseneg_metricfn = BinaryFalseNegatives()
     
-    model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy',
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy',
                                                                          truepos_metricfn,
                                                                          trueneg_metricfn,
                                                                          falsepos_metricfn,
@@ -211,6 +212,7 @@ def parse_arguments():
   # L2_REG_LAMBDA=0.0 # L2 regularization lambda
   global DROPOUT_KEEP_PROB
   global HIDDEN_DIMS
+  global LEARNING_RATE 
   
   # Stdout params
   global DEBUG
@@ -250,6 +252,7 @@ def parse_arguments():
   parser.add_argument("-n", "--num-filters", help="number of filters per size", type=int, default=100)
   parser.add_argument("-r", "--dropout-prob", help='probability of dropout for 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
   parser.add_argument("-m", "--hidden-dims", help="number of hidden nodes in the last dense layer", type=int, default=50)
+  parser.add_argument("-i", "--init-learning-rate", help="Initial Learning Rate", type=float, default=0.001)
 
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
@@ -280,6 +283,7 @@ def parse_arguments():
   dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", dropout_prob_string)
   DROPOUT_KEEP_PROB = [float(d) for d in dropouts]
   HIDDEN_DIMS = arguments.hidden_dims
+  LEARNING_RATE = arguments.init_learning_rate
   
   # Stdout params
   DEBUG = arguments.debug
