@@ -124,7 +124,7 @@ def train_CNN(datasets,
     model_output = Dense(1, activation="sigmoid")(dense)
 
     # stochastic gradient descent algo, currently unused
-    opt = SGD(lr=0.01)
+    # opt = SGD(lr=0.01)
 
     model = Model(inputs=main_input, outputs=model_output)
     
@@ -158,7 +158,6 @@ def train_CNN(datasets,
       verbosity = 1
     print(model.summary())
     
-
     model.fit_generator(generator=itr_train,
                         validation_data=itr_validate,
                         validation_steps=val_batch_num,

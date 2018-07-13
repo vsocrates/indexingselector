@@ -10,7 +10,6 @@ import time
 import numpy as np
 
 # Scikit-learn
-from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
 
 
@@ -50,8 +49,12 @@ from confusion_matrix_classes import BinaryTrueNegatives
 from confusion_matrix_classes import BinaryFalsePositives 
 from confusion_matrix_classes import BinaryFalseNegatives
 
+from KerasBatchClassifier import KerasBatchClassifier
+
 DO_TIMING_ANALYSIS = False
 
+# IMPORTANT: This file is incomplete and broken: It will only ever work for single-input so it was decided to not be worth the time.
+# Also gridsearchCV and its corresponding fit method only take numpy arrays, and we use tf.Datasets so it'd be a lot of work to reorganize
 def train_CNN(datasets,
               vocab_processors,
               max_doc_lengths,
@@ -99,7 +102,7 @@ def train_CNN(datasets,
     itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
     itr_validate = make_iterator(datasets.abs_text_test_dataset, val_batch_num)
    
-    def create_model(optimizer="adam"):
+    def create_model(optimdizer="adam"):
       main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
       embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                   output_dim=EMBEDDING_DIM,
@@ -146,19 +149,12 @@ def train_CNN(datasets,
                                                                            trueneg_metricfn,
                                                                            falsepos_metricfn,
                                                                            falseneg_metricfn])
-      
+      print(seq_model.summary())
+
       return seq_model
       
-    model = KerasClassifier(build_fn=create_model, verbose=0)
-    epochs = [5, 10]
-    batches = [5, 10, 100]
-    optimizers = ['rmsprop', 'adam']
-    hyperparameters = dict(optimizer=optimizers, epochs=epochs, batch_size=batches)
-    
-    grid = GridSearchCV(estimator=model, param_grid=hyperparameters)
-    grid_result = grid.fit(features, target)
-
-
+      
+      
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
@@ -177,23 +173,25 @@ def train_CNN(datasets,
       callbacks.append(CSVLogger('training.log'))
       # callbacks.append(ProgbarLogger(count_mode='steps'))
       verbosity = 1
-    print(model.summary())
     
 
-    model.fit_generator(generator=itr_train,
-                        validation_data=itr_validate,
-                        validation_steps=val_batch_num,
-                        steps_per_epoch=train_batch_num,
-                        epochs=NUM_EPOCHS,
-                        verbose=verbosity,
-                        workers=0,
-                        callbacks=callbacks)
+    model = KerasBatchClassifier(build_fn=create_model)
+    epochs = [5, 10]
+    batches = [5, 10, 100]
+    optimizers = ['rmsprop', 'adam']
+    hyperparameters = dict(optimizer=optimizers)
+    
+    grid = GridSearchCV(estimator=model, param_grid=hyperparameters)
+    grid_result = grid.fit(datasets.abs_text_train_dataset, datasets.abs_text_test_dataset, train_steps=train_batch_num, test_steps=val_batch_num, epochs=NUM_EPOCHS, callbacks=callbacks, y_val=itr_validate)
+
+
+
                         
-    if SAVE_MODEL:
-      pattern = re.compile(r"[^\/]*$")
-      outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
-      outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
-      model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model" + timestr + ".h5")
+    # if SAVE_MODEL:
+      # pattern = re.compile(r"[^\/]*$")
+      # outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
+      # outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
+      # model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model" + timestr + ".h5")
                         
   
 def main(argv=None):  
