@@ -22,16 +22,16 @@ from tensorflow.python.platform import gfile
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
-PAD = "<PAD>"
+UNK = "<UNK>"
 START = "<START>"
 EOS = "<EOS>"
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words, should_stem):
+  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words, should_stem, limit_vocab=True, max_vocab_size=80000):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
-    self.vocab[PAD] = 0
+    self.vocab[UNK] = 0
     self.vocab[START] = 1
     self.vocab[EOS] = 2
     self.next = 2  # After 2 comes 3
@@ -42,6 +42,7 @@ class VocabProcessor:
     self.test_size = round(1.0 - train_size, 2)
     self.remove_stop_words = remove_stop_words
     self.should_stem = should_stem
+    self.max_vocab_size = max_vocab_size
     
     if remove_stop_words:
       remove_words = stopwords.words("english") + list(punctuation)
@@ -57,7 +58,7 @@ class VocabProcessor:
   def reset_processor(self):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
-    self.vocab[PAD] = 0
+    self.vocab[UNK] = 0
     self.vocab[START] = 1
     self.vocab[EOS] = 2
     self.next = 2  # After 2 comes 3
@@ -78,8 +79,20 @@ class VocabProcessor:
       :param token:
       :return: the token id in the vocab
       '''
-      self.token_counter[token] += 1
-      return self.vocab[token]
+      if this.limit_vocab:        
+        if token in self.vocab:
+          self.token_counter[token] += 1
+          return self.vocab[token]
+        else:
+          if self.next < self.max_vocab_size:
+            self.token_counter[token] += 1
+            return self.vocab[token]
+          else:
+            self.token_counter[UNK] += 1
+            return self.vocab[UNK]
+      else:
+          self.token_counter[token] += 1
+          return self.vocab[token]
 
   # does more than just tokenization
   def tokenize(self, text):

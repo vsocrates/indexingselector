@@ -161,7 +161,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, should_stem, with_aux_info=False):
+def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, should_stem, max_vocab_length, with_aux_info=False):
 
   # we are timing the abstract text data pull
   start_time = time.time()
@@ -182,7 +182,7 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, sh
   if with_aux_info:
     # because there are 5 things we want (including raw abstract text)
     for name in ["text", "journal_title", "article_title", "affiliations", "keywords"]:
-      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem)
+      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem, max_vocab_length)
       
     
     datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list)
@@ -193,7 +193,7 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, sh
     datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list)
         
   print("Vocabulary Size: ", len(vocab_proc_dict['text'].vocab))
-  # print("vocab", vocab_proc_dict['text'].token_counter)
+  print("vocab", vocab_proc_dict['text'].token_counter)
     
   return datasets, vocab_proc_dict, max_doc_length, len(text_list)
 
@@ -357,9 +357,9 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
       labels.append([0])
   
   # we are adding start and end tags
-  for doc in abs_text_word_ids:
-    doc.insert(0, 1)
-    doc.append(2)
+  # for doc in abs_text_word_ids:
+    # doc.insert(0, 1)
+    # doc.append(2)
     
   # We have to do this here, because we just added two elements to each list, max increased by two
   max_doc_length += 2

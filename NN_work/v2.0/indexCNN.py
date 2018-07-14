@@ -178,7 +178,7 @@ def train_CNN(datasets,
 def main(argv=None):  
   text_list = []
 
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, SHOULD_STEM, with_aux_info=WITH_AUX_INFO)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, SHOULD_STEM, LIMIT_VOCAB, MAX_VOCAB_SIZE, with_aux_info=WITH_AUX_INFO)
   
   model = None
   if PRETRAINED_W2V_PATH:
@@ -198,7 +198,9 @@ def parse_arguments():
   global PRETRAINED_W2V_PATH# = "PubMed-and-PMC-w2v.bin"
   global WITH_AUX_INFO
   global MATRIX_SIZE#  = 9000
-
+  global LIMIT_VOCAB
+  global MAX_VOCAB_SIZE
+  
   # Model Hyperparameters
   global REMOVE_STOP_WORDS
   global SHOULD_STEM
@@ -240,6 +242,8 @@ def parse_arguments():
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
+  parser.add_argument("-c", "--limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
+  parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
 
   # Model hyperparams  
   parser.add_argument("-o", "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
@@ -265,6 +269,8 @@ def parse_arguments():
   PRETRAINED_W2V_PATH = arguments.w2v_path
   WITH_AUX_INFO = arguments.get_aux_info
   MATRIX_SIZE = arguments.word2vec_size
+  LIMIT_VOCAB = arguments.limit_vocab
+  MAX_VOCAB_SIZE = arguments.max_vocab_size
 
   # Model Hyperparameters
   REMOVE_STOP_WORDS = arguments.remove_stop_words
@@ -272,7 +278,7 @@ def parse_arguments():
   TRAIN_SET_PERCENTAGE = arguments.train_percentage
   
   EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
-  EMBEDDING_TRAINABLE = embedding_trainable
+  EMBEDDING_TRAINABLE = arguments.embedding_trainable
   BATCH_SIZE = arguments.batch_size
   NUM_EPOCHS = arguments.num_epochs
   
