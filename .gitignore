@@ -127,3 +127,6 @@ PubMed-and-PMC-w2v-50dim.txt
 # don't need any model files, we'll pull those in ourselves
 *.h5
 *.hdf5
+
+# ignore data folder
+data/
