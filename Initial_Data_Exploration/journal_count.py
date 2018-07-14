@@ -38,8 +38,8 @@ def main():
   counter = 0
   # this one is the larger one
   # xml_file = "pubmed_result.xml"
-  xml_file = "cits.xml"
-  # xml_file = "small_data.xml"
+  # xml_file = "cits.xml"
+  xml_file = "../data/pubmed_result_physics.xml"
 
   
   print("Starting Journal count on %s" % xml_file)
