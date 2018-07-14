@@ -100,7 +100,7 @@ def train_CNN(datasets,
                                 output_dim=EMBEDDING_DIM,
                                 weights=[w2vmodel],
                                 input_length=max_doc_lengths.abs_text_max_length,
-                                trainable=False,
+                                trainable=EMBEDDING_TRAINABLE,
                                 name="embedding")(main_input)
 
     dropout1 = Dropout(DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
@@ -205,6 +205,7 @@ def parse_arguments():
   global TRAIN_SET_PERCENTAGE#  = 0.9
   
   global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
+  global EMBEDDING_TRAINABLE
   global BATCH_SIZE 
   global NUM_EPOCHS 
   global FILTER_SIZES
@@ -246,6 +247,7 @@ def parse_arguments():
   parser.add_argument("-p", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
   
   parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
+  parser.add_argument("-q", "--embedding-trainable", help="make the embedding trainable", action="store_true")
   parser.add_argument("-b", "--batch-size", help="set the batch size", type=int, default=64)
   parser.add_argument("-e", "--num-epochs", help="the number of epochs to train", type=int, default=200)
   parser.add_argument("-z", "--filter-sizes", help='list of filter sizes [e.g. "(2,3,4)"]', default='"(2,4,5)"')
@@ -270,6 +272,7 @@ def parse_arguments():
   TRAIN_SET_PERCENTAGE = arguments.train_percentage
   
   EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
+  EMBEDDING_TRAINABLE = embedding_trainable
   BATCH_SIZE = arguments.batch_size
   NUM_EPOCHS = arguments.num_epochs
   

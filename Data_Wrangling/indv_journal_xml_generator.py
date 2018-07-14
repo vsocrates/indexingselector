@@ -50,7 +50,7 @@ def main():
   global counter
   counter = 0
   xml_file = "../data/pubmed_result_2012_2018.xml"
-  jid_to_match = "101563288"
+  jid_to_match = "101528555"
   
   pattern = re.compile(r"[^\/]*$")
   outxml_path = pattern.search(xml_file).group(0).split(".")[0]
