@@ -42,6 +42,7 @@ class VocabProcessor:
     self.test_size = round(1.0 - train_size, 2)
     self.remove_stop_words = remove_stop_words
     self.should_stem = should_stem
+    self.limit_vocab = limit_vocab
     self.max_vocab_size = max_vocab_size
     
     if remove_stop_words:
@@ -79,7 +80,7 @@ class VocabProcessor:
       :param token:
       :return: the token id in the vocab
       '''
-      if this.limit_vocab:        
+      if self.limit_vocab:        
         if token in self.vocab:
           self.token_counter[token] += 1
           return self.vocab[token]
