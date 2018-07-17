@@ -8,6 +8,8 @@ global MATRIX_SIZE#  = 9000
 global REMOVE_STOP_WORDS
 global SHOULD_STEM
 global TRAIN_SET_PERCENTAGE#  = 0.9
+global EMBEDDING_TRAINABLE
+global LEARNING_RATE
 
 global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
 global BATCH_SIZE 
