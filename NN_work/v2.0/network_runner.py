@@ -184,8 +184,11 @@ def parse_arguments():
   # Stdout params
   globals.DEBUG = arguments.debug
   globals.SAVE_MODEL = arguments.save
+  
+  print("\n")
+  print("All network parameters: ", arguments)
+  print("\n\n")
 
-      
 if __name__ == '__main__':
   parse_arguments()
   tf.app.run(main=main)
