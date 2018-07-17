@@ -23,6 +23,8 @@ warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 import gensim
 
 # Own Modules
+import globals 
+
 from data_utils import data_load
 from data_utils import get_word_to_vec_model
 from conditional_decorator import conditional_decorator
@@ -45,9 +47,7 @@ from keras.callbacks import ModelCheckpoint
 
 from keras.optimizers import SGD
 
-DO_TIMING_ANALYSIS = False
-
-def train_LSTM(datasets,
+def train_LSTMAux(datasets,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
@@ -55,8 +55,8 @@ def train_LSTM(datasets,
               ):
               
   session_conf = tf.ConfigProto(
-          allow_soft_placement=ALLOW_SOFT_PLACEMENT, # determines if op can be placed on CPU when GPU not avail
-          log_device_placement=LOG_DEVICE_PLACEMENT, # whether device placements should be logged, we don't have any for CPU
+          allow_soft_placement=globals.ALLOW_SOFT_PLACEMENT, # determines if op can be placed on CPU when GPU not avail
+          log_device_placement=globals.LOG_DEVICE_PLACEMENT, # whether device placements should be logged, we don't have any for CPU
           #operation_timeout_in_ms=60000
           )
   session_conf.gpu_options.allow_growth = True
@@ -90,18 +90,18 @@ def train_LSTM(datasets,
                 labels_out.append(labels)
                 # yield inputs, labels  
               except tf.errors.OutOfRangeError:
-                if DEBUG:
+                if globals.DEBUG:
                   print("OutOfRangeError Exception Thrown")          
                 break
               except Exception as e: 
-                if DEBUG:
+                if globals.DEBUG:
                   print(e)
                   print("Unknown Exception Thrown")
                 break
             yield value_list, labels_out
             
-    train_batch_num = int((dataset_size*(TRAIN_SET_PERCENTAGE)) // BATCH_SIZE) + 1
-    val_batch_num = int((dataset_size*(1-TRAIN_SET_PERCENTAGE)) // BATCH_SIZE)
+    train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
+    val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     
     itr_train_abs = make_multiple_iterator([datasets.abs_text_train_dataset,datasets.affl_train_dataset], train_batch_num)
     itr_validate_abs = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset], val_batch_num)
@@ -109,30 +109,30 @@ def train_LSTM(datasets,
    
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")
     embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
-                                output_dim=EMBEDDING_DIM,
+                                output_dim=globals.EMBEDDING_DIM,
                                 weights=[w2vmodel],
                                 input_length=max_doc_lengths.abs_text_max_length,
                                 trainable=False,
                                 name="embedding")(main_input)
-    dropout1 = Dropout(MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
-    lstm_out = LSTM(MAIN_LSTM_SIZE)(dropout1)
-    dropout2 = Dropout(MAIN_DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
+    dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+    lstm_out = LSTM(globals.MAIN_LSTM_SIZE)(dropout1)
+    dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name="dropout2")(lstm_out)
     auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
     # auxiliary information
     aux_input = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
     affl_embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
-                                output_dim=EMBEDDING_DIM,
+                                output_dim=globals.EMBEDDING_DIM,
                                 input_length=max_doc_lengths.abs_text_max_length,
                                 name="affl_embedding")(aux_input)
-    dropout3 = Dropout(AUX_DROPOUT_KEEP_PROB[0], name="dropout3")(affl_embedding_layer)
-    aux_lstm_out = LSTM(AUX_LSTM_SIZE)(dropout3)
-    dropout4 = Dropout(AUX_DROPOUT_KEEP_PROB[1], name="dropout4")(aux_lstm_out)
+    dropout3 = Dropout(globals.AUX_DROPOUT_KEEP_PROB[0], name="dropout3")(affl_embedding_layer)
+    aux_lstm_out = LSTM(globals.AUX_LSTM_SIZE)(dropout3)
+    dropout4 = Dropout(globals.AUX_DROPOUT_KEEP_PROB[1], name="dropout4")(aux_lstm_out)
     
     concat = Concatenate()([dropout4, dropout2])
-    x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(concat)
-    x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(x)
-    x = Dense(COMBI_DENSE_LAYER_DIM, activation='relu')(x)
+    x = Dense(globals.COMBI_DENSE_LAYER_DIM, activation='relu')(concat)
+    x = Dense(globals.COMBI_DENSE_LAYER_DIM, activation='relu')(x)
+    x = Dense(globals.COMBI_DENSE_LAYER_DIM, activation='relu')(x)
 
     # And finally we add the main logistic regression layer
     main_output = Dense(1, activation='sigmoid', name='main_output')(x)
@@ -148,10 +148,10 @@ def train_LSTM(datasets,
     falseneg_metricfn = BinaryFalseNegatives()
     
     model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy',
-                                                                         truepos_metricfn,
-                                                                         trueneg_metricfn,
-                                                                         falsepos_metricfn,
-                                                                         falseneg_metricfn])
+              truepos_metricfn,
+              trueneg_metricfn,
+              falsepos_metricfn,
+              falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
@@ -163,7 +163,7 @@ def train_LSTM(datasets,
     callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
     
     verbosity = 2
-    if DEBUG:
+    if globals.DEBUG:
       callbacks = []
       callbacks.append(CSVLogger('training.log'))
       # callbacks.append(ProgbarLogger(count_mode='steps'))
@@ -174,135 +174,13 @@ def train_LSTM(datasets,
                         validation_data=itr_validate_abs,
                         validation_steps=val_batch_num,
                         steps_per_epoch=train_batch_num,
-                        epochs=NUM_EPOCHS,
+                        epochs=globals.NUM_EPOCHS,
                         verbose=verbosity,
                         workers=0,
                         callbacks=callbacks)
 
-    if SAVE_MODEL:
+    if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
-      outxml_path = pattern.search(XML_FILE).group(0).split(".")[0]
-      outw2v_path = pattern.search(PRETRAINED_W2V_PATH).group(0).split(".")[0]
+      outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
+      outw2v_path = pattern.search(globals.PRETRAINED_W2V_PATH).group(0).split(".")[0]
       model.save("LSTMAux_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
-                      
-
-def main(argv=None):
-  text_list = []
-
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(XML_FILE, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE, REMOVE_STOP_WORDS, SHOULD_STEM, with_aux_info=WITH_AUX_INFO)
-
-  model = None
-  if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, MATRIX_SIZE, EMBEDDING_DIM, vocab_processors, "text")
-    train_LSTM(datasets,
-              vocab_processors,
-              max_doc_lengths,
-              dataset_size,
-              w2vmodel=model,
-              )
-  else:
-    train_LSTM(datasets, vocab_processors, max_doc_lengths, dataset_size)
-
-
-def parse_arguments():
-  # Data loading Parameters
-  global XML_FILE#  = "pubmed_result.xml"
-  global PRETRAINED_W2V_PATH# = "PubMed-and-PMC-w2v.bin"
-  global WITH_AUX_INFO
-  global MATRIX_SIZE#  = 9000
-
-  # Model Hyperparameters
-  global REMOVE_STOP_WORDS
-  global SHOULD_STEM
-  global TRAIN_SET_PERCENTAGE#  = 0.9
-  
-  global EMBEDDING_DIM # default 128, pretrained => 200 # not currently set
-  global BATCH_SIZE 
-  global NUM_EPOCHS
-  
-  global MAIN_LSTM_SIZE
-  global AUX_LSTM_SIZE
-  global MAIN_DROPOUT_KEEP_PROB
-  global AUX_DROPOUT_KEEP_PROB
-  global COMBI_DENSE_LAYER_DIM
-  
-  # Stdout params
-  global DEBUG
-  global SAVE_MODEL
-  # These are TF flags, the first of which doesn't seem to do anything in keras??? and second is rarely used
-  global ALLOW_SOFT_PLACEMENT
-  ALLOW_SOFT_PLACEMENT=False
-  global LOG_DEVICE_PLACEMENT
-  LOG_DEVICE_PLACEMENT=False
- 
-  def restricted_float(x):
-      x = float(x)
-      if x < 0.0 or x > 1.0:
-          raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
-      return x
-
-  parser = argparse.ArgumentParser()
-
-  # Data loading params
-  parser.add_argument("-f", "--data-file", help="location of data file", required=True)
-  parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
-  parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
-  parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
-
-  # Model hyperparams  
-  parser.add_argument("-o", "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
-  parser.add_argument("-t", "--stem-words", help="flag to stem words in abstracts", action="store_true")  
-  parser.add_argument("-p", "--train-percentage", help="percentage of the dataset to train from 0 to 1", type=restricted_float, default=0.9)
-  
-  parser.add_argument("-l", "--embedding-dim", help="dimensionality of the learned word embeddings", type=int, default=200)
-  parser.add_argument("-b", "--batch-size", help="set the batch size", type=int, default=64)
-  parser.add_argument("-e", "--num-epochs", help="the number of epochs to train", type=int, default=200)
-  
-  parser.add_argument("-m", "--main-lstm-dim", help="dimensionality of the MAIN lstm layer", type=int, default=64)
-  parser.add_argument("-u", "--aux-lstm-dim", help="dimensionality of the AUX lstm layer", type=int, default=64) 
-  parser.add_argument("-i", "--main-dropout-prob", help='probability of dropout for MAIN 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
-  parser.add_argument("-r", "--aux-dropout-prob", help='probability of dropout for AUX 2 layers [e.g. "(0.5, 0.8)"]', default='"(0.5, 0.8)"')
-  parser.add_argument("-s", "--dense-dim", help="dimensionality combined data dense layer", type=int, default=64) 
-  
-
-  # Stdout params
-  parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
-  parser.add_argument("-a", "--save", help="saves the model after training", action="store_true")
-  
-  arguments = parser.parse_args()
-
-  XML_FILE = arguments.data_file
-  PRETRAINED_W2V_PATH = arguments.w2v_path
-  WITH_AUX_INFO = arguments.get_aux_info
-  MATRIX_SIZE = arguments.word2vec_size
-
-  # Model Hyperparameters
-  REMOVE_STOP_WORDS = arguments.remove_stop_words
-  SHOULD_STEM = arguments.stem_words
-  TRAIN_SET_PERCENTAGE = arguments.train_percentage
-  
-  EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
-  BATCH_SIZE = arguments.batch_size
-  NUM_EPOCHS = arguments.num_epochs
-  
-  MAIN_LSTM_SIZE = arguments.main_lstm_dim
-  AUX_LSTM_SIZE = arguments.aux_lstm_dim
-  
-  main_dropout_prob_string = arguments.main_dropout_prob
-  dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", main_dropout_prob_string)
-  MAIN_DROPOUT_KEEP_PROB = [float(d) for d in dropouts]
-  
-  aux_dropout_prob_string = arguments.aux_dropout_prob
-  dropouts = re.findall(r"[-+]?\d*\.\d+|\d+", aux_dropout_prob_string)
-  AUX_DROPOUT_KEEP_PROB = [float(d) for d in dropouts]  
-
-  COMBI_DENSE_LAYER_DIM = arguments.dense_dim
-  
-  # Stdout params
-  DEBUG = arguments.debug
-  SAVE_MODEL = arguments.save
-
-
-if __name__ == '__main__':
-  parse_arguments()
-  tf.app.run(main=main)
