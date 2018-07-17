@@ -113,6 +113,7 @@ def train_CNNAux(datasets,
     itr_validate = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset], val_batch_num)
     
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
+    print("input_dim=len(vocab_processors['text'].vocab", len(vocab_processors['text'].vocab))
     embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
                                 weights=[w2vmodel],

@@ -106,7 +106,7 @@ def parse_arguments():
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
   parser.add_argument("-c", "--no-limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
-  parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
+  parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
 
   # Common Model hyperparameters  
   parser.add_argument("-y", "--model-type", help="Which type of model to use", required=True, choices=['CNN', 'CNNAux', 'LSTM', 'LSTMAux'])

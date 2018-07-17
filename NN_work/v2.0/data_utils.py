@@ -536,7 +536,7 @@ def get_word_to_vec_model(model_path, matrix_size, embedding_dim, vocab_proc, vo
   
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   print("Embedding Dims: ", model.vector_size)
-  print("Number of Tokens in Model: ", len(model.index2word))
+  print("Number of Tokens in W2V Model: ", len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
