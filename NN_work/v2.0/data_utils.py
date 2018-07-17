@@ -156,7 +156,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
 
   cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
   cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
-  
+  # print("cit_dict: ", cit_dict['affiliations'])
   # print('citation: ', cit_dict)
   output_list.append(cit_dict)
 
@@ -317,6 +317,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
   max_affl_length = 0
   max_keyword_length = 0
   
+  idx_hold = 0
   # these methods do that using defaultdict, so that we can automatically add newly found tokens
   for idx, doc in enumerate(doc_data_list):
     # first we do abstract text
@@ -333,17 +334,20 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
     jrnl_title_ids.append(word_id_list)
 
     tokens = art_title_vocab_proc.tokenize(str(doc['article_title']))
+    # print("article title tokesN: ", tokens)
     word_id_list = art_title_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_art_title_length:
       max_art_title_length = len(word_id_list)
     art_title_ids.append(word_id_list)
 
     tokens = affil_vocab_proc.tokenize(str(doc['affiliations']))
+    # print("affiliations tokesN: ", tokens)
     word_id_list = affil_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_affl_length:
       max_affl_length = len(word_id_list)
+      idx_hold = idx
     affiliation_ids.append(word_id_list)
-
+    
     tokens = keyword_vocab_proc.tokenize(str(doc['keywords']))
     word_id_list = keyword_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_keyword_length:
@@ -356,6 +360,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
     elif doc['target'] == "PubMed-not-MEDLINE":
       labels.append([0])
   
+  print("affiliation test: ", affiliation_ids[idx_hold])
   # we are adding start and end tags
   # for doc in abs_text_word_ids:
     # doc.insert(0, 1)
@@ -517,7 +522,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
                                 affl_test_dataset=affl_test_dataset,
                                 keyword_train_dataset=keyword_train_dataset,
                                 keyword_test_dataset=keyword_test_dataset)
-
   all_max_lengths = Dataset_Max_Lengths(abs_text_max_length=max_doc_length,
                                         jrnl_title_max_length=max_jrnl_title_length,
                                         art_title_max_length=max_art_title_length,

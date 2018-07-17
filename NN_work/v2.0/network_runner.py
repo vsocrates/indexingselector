@@ -53,7 +53,7 @@ def main(argv=None):
   text_list = []
 
   datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
-  
+  print("again: ", max_doc_lengths)
   model = None
   if globals.PRETRAINED_W2V_PATH:
     model = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, globals.EMBEDDING_DIM, vocab_processors, "text")
