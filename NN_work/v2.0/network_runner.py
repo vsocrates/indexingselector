@@ -105,7 +105,7 @@ def parse_arguments():
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
-  parser.add_argument("-c", "--limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
+  parser.add_argument("-c", "--no-limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
 
   # Common Model hyperparameters  
@@ -142,7 +142,7 @@ def parse_arguments():
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
   globals.WITH_AUX_INFO = arguments.get_aux_info
   globals.MATRIX_SIZE = arguments.word2vec_size
-  globals.LIMIT_VOCAB = arguments.limit_vocab
+  globals.LIMIT_VOCAB = arguments.no_limit_vocab
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
 
   # Common Model Hyperparameters
