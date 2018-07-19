@@ -20,6 +20,7 @@ from sklearn.utils import shuffle
 
 from vocab import VocabProcessor
 from conditional_decorator import conditional_decorator
+import globals
 
 Datasets = collections.namedtuple('Datasets',['abs_text_train_dataset',
                                               'abs_text_test_dataset',
@@ -318,6 +319,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
   max_keyword_length = 0
   
   idx_hold = 0
+
   # these methods do that using defaultdict, so that we can automatically add newly found tokens
   for idx, doc in enumerate(doc_data_list):
     # first we do abstract text
@@ -535,7 +537,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
 # ------------------------- W2V Gensim Loading Method  ------------------------- 
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)            
-def get_word_to_vec_model(model_path, matrix_size, embedding_dim, vocab_proc, vocab_proc_tag):
+def get_word_to_vec_model(model_path, matrix_size, vocab_proc, vocab_proc_tag):
   vocab = vocab_proc[vocab_proc_tag].vocab
   
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
@@ -543,8 +545,10 @@ def get_word_to_vec_model(model_path, matrix_size, embedding_dim, vocab_proc, vo
   print("Number of Tokens in W2V Model: ", len(model.index2word))
   # store the embeddings in a numpy array
   
-  # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((len(vocab), embedding_dim))
+  # set the global for other places
+  globals.EMBEDDING_DIM = model.vector_size
+  
+  embedding_matrix = np.zeros((len(vocab), model.vector_size))
   # for i in range(len(model.wv.vocab)):
   max_size = min(len(model.index2word), len(vocab))
 

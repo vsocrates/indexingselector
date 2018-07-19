@@ -56,7 +56,7 @@ def main(argv=None):
   print("again: ", max_doc_lengths)
   model = None
   if globals.PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, globals.EMBEDDING_DIM, vocab_processors, "text")
+    model = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "text")
   
   if globals.MODEL_TYPE == 'CNN':
     train_CNN(datasets,

@@ -46,6 +46,9 @@ from confusion_matrix_classes import BinaryTruePositives
 from confusion_matrix_classes import BinaryTrueNegatives
 from confusion_matrix_classes import BinaryFalsePositives 
 from confusion_matrix_classes import BinaryFalseNegatives
+from confusion_matrix_classes import Recall
+from confusion_matrix_classes import Precision 
+from confusion_matrix_classes import F1Score
 
 DO_TIMING_ANALYSIS = False
 
@@ -161,7 +164,7 @@ def train_CNNAux(datasets,
     keyword_embedding_layer = Flatten()(keyword_embedding_layer)
     auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout2")(keyword_embedding_layer)    
 
-    # # Auxuiliary Convolutional block
+    # # Auxiliary Convolutional block
     # aux_conv_blocks = []
     # for sz in FILTER_SIZES:
       # aux_conv_name = "auxconv1D-%s" % sz
@@ -195,13 +198,19 @@ def train_CNNAux(datasets,
     trueneg_metricfn = BinaryTrueNegatives()
     falsepos_metricfn = BinaryFalsePositives()
     falseneg_metricfn = BinaryFalseNegatives()
+    recall = Recall()
+    precision = Precision()
+    F1score = F1Score()
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
                   metrics=['accuracy',
-                           truepos_metricfn,
-                           trueneg_metricfn,
-                           falsepos_metricfn,
-                           falseneg_metricfn])
+    recall,
+    precision,
+    F1score])
+                           # truepos_metricfn,
+                           # trueneg_metricfn,
+                           # falsepos_metricfn,
+                           # falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
