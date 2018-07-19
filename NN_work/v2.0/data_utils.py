@@ -345,7 +345,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
     word_id_list = affil_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_affl_length:
       max_affl_length = len(word_id_list)
-      idx_hold = idx
+      idx_hold = tokens
     affiliation_ids.append(word_id_list)
     
     tokens = keyword_vocab_proc.tokenize(str(doc['keywords']))
@@ -360,7 +360,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
     elif doc['target'] == "PubMed-not-MEDLINE":
       labels.append([0])
   
-  print("affiliation test: ", affiliation_ids[idx_hold])
+  print("affiliation test: ", idx_hold)
   # we are adding start and end tags
   # for doc in abs_text_word_ids:
     # doc.insert(0, 1)

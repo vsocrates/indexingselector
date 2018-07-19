@@ -47,6 +47,9 @@ from confusion_matrix_classes import BinaryTruePositives
 from confusion_matrix_classes import BinaryTrueNegatives
 from confusion_matrix_classes import BinaryFalsePositives 
 from confusion_matrix_classes import BinaryFalseNegatives
+from confusion_matrix_classes import Recall
+from confusion_matrix_classes import Precision
+from confusion_matrix_classes import F1Score
 
 DO_TIMING_ANALYSIS = False
 
@@ -129,13 +132,16 @@ def train_CNN(datasets,
     # opt = SGD(lr=0.01)
     opt = Adam(lr=globals.LEARNING_RATE)
     model = Model(inputs=main_input, outputs=model_output)
-    
+    # recall = Recall()
+    # precision = Precision()
+    F1score = F1Score()
     truepos_metricfn = BinaryTruePositives()
     trueneg_metricfn = BinaryTrueNegatives()
     falsepos_metricfn = BinaryFalsePositives()
     falseneg_metricfn = BinaryFalseNegatives()
-    
     model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy',
+    F1score,# recall,
+    # precision,
                                                                          truepos_metricfn,
                                                                          trueneg_metricfn,
                                                                          falsepos_metricfn,
@@ -168,7 +174,8 @@ def train_CNN(datasets,
                         verbose=verbosity,
                         workers=0,
                         callbacks=callbacks)
-                        
+    print("METETWERWERWER: ", model.metrics[1].true_positives)
+    
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
