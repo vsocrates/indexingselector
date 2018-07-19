@@ -132,20 +132,21 @@ def train_CNN(datasets,
     # opt = SGD(lr=0.01)
     opt = Adam(lr=globals.LEARNING_RATE)
     model = Model(inputs=main_input, outputs=model_output)
-    # recall = Recall()
-    # precision = Precision()
+    recall = Recall()
+    precision = Precision()
     F1score = F1Score()
-    truepos_metricfn = BinaryTruePositives()
-    trueneg_metricfn = BinaryTrueNegatives()
-    falsepos_metricfn = BinaryFalsePositives()
-    falseneg_metricfn = BinaryFalseNegatives()
+    # truepos_metricfn = BinaryTruePositives()
+    # trueneg_metricfn = BinaryTrueNegatives()
+    # falsepos_metricfn = BinaryFalsePositives()
+    # falseneg_metricfn = BinaryFalseNegatives()
     model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy',
-    F1score,# recall,
-    # precision,
-                                                                         truepos_metricfn,
-                                                                         trueneg_metricfn,
-                                                                         falsepos_metricfn,
-                                                                         falseneg_metricfn])
+    F1score,
+    recall,
+    precision,])
+                                                                         # truepos_metricfn,
+                                                                         # trueneg_metricfn,
+                                                                         # falsepos_metricfn,
+                                                                         # falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
                   # loss_weights=[1., 0.2]
