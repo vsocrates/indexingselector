@@ -540,7 +540,13 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
 def get_word_to_vec_model(model_path, matrix_size, vocab_proc, vocab_proc_tag):
   vocab = vocab_proc[vocab_proc_tag].vocab
   
-  model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
+  if model_path.find(".bin") > 0:
+    model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
+  elif model_path.find(".txt") > 0:
+    model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=False, limit=matrix_size)
+  else:
+    model = gensim.models.KeyedVectors.load_word2vec_format(model_path, limit=matrix_size)
+    
   print("Embedding Dims: ", model.vector_size)
   print("Number of Tokens in W2V Model: ", len(model.index2word))
   # store the embeddings in a numpy array
