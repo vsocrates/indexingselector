@@ -107,7 +107,7 @@ def parse_arguments():
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
   parser.add_argument("-c", "--no-limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
-
+  parser.add_argument("-lw", "--lower-vocab", help="make vocab lowercase", action="store_true")
   # Common Model hyperparameters  
   parser.add_argument("-at", "--aux-trainable", help="Auxiliary information trainable", action="store_true")
   parser.add_argument("-y", "--model-type", help="Which type of model to use", required=True, choices=['CNN', 'CNNAux', 'LSTM', 'LSTMAux'])
@@ -145,7 +145,8 @@ def parse_arguments():
   globals.MATRIX_SIZE = arguments.word2vec_size
   globals.LIMIT_VOCAB = arguments.no_limit_vocab
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
-
+  globals.VOCAB_LOWERCASE = arguments.lower_vocab
+  
   # Common Model Hyperparameters
   globals.AUX_TRAINABLE = arguments.aux_trainable
   globals.MODEL_TYPE = arguments.model_type

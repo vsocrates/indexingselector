@@ -22,6 +22,8 @@ from tensorflow.python.platform import gfile
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
+import globals
+
 UNK = "<UNK>"
 START = "<START>"
 EOS = "<EOS>"
@@ -102,7 +104,10 @@ class VocabProcessor:
       # currently, the stop word removal doesn't change all the words to lowercase.
       # 7-17-18 1:12 PM Testing with lowercase all words
       if self.remove_stop_words:
-        words = [word.lower() for word in words if word.lower() not in self.remove_word_set]
+        if globals.VOCAB_LOWERCASE:
+          words = [word.lower() for word in words if word.lower() not in self.remove_word_set]
+        else:
+          words = [word for word in words if word.lower() not in self.remove_word_set]
       if self.should_stem:
         words = [self.stemmer.stem(word) for word in words]
       return words

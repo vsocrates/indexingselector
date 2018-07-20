@@ -3,6 +3,7 @@ global XML_FILE#  = "pubmed_result.xml"
 global PRETRAINED_W2V_PATH# = "PubMed-and-PMC-w2v.bin"
 global WITH_AUX_INFO
 global MATRIX_SIZE#  = 9000
+global VOCAB_LOWERCASE
 
 # Common Model Hyperparameters
 global AUX_TRAINABLE
