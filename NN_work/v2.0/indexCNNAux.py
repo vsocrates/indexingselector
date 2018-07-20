@@ -148,6 +148,7 @@ def train_CNNAux(datasets,
     aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input1")
     affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel],                                
                                 trainable=globals.AUX_TRAINABLE,
                                 input_length=max_doc_lengths.affl_max_length,
                                 name="affl_embedding")(aux_input1)
@@ -159,6 +160,7 @@ def train_CNNAux(datasets,
     aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
     keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel],                                
                                 trainable=globals.AUX_TRAINABLE,
                                 input_length=max_doc_lengths.keyword_max_length,
                                 name="keyword_embedding")(aux_input2)
