@@ -54,23 +54,26 @@ def main(argv=None):
 
   datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
   print("again: ", max_doc_lengths)
-  model = None
+  model_list = {}
   if globals.PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "text")
-  
+    model_list['text'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "text")
+  if globals.WITH_AUX_INFO:
+    model_list['affiliations'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "affiliations")
+    model_list['keywords'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "keywords")
+    
   if globals.MODEL_TYPE == 'CNN':
     train_CNN(datasets,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
-              w2vmodel=model,
+              w2vmodel=model_list['text'],
               )
   elif globals.MODEL_TYPE == "CNNAux":
     train_CNNAux(datasets,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
-              w2vmodel=model,
+              w2vmodel=model_list,
               )
   elif globals.MODEL_TYPE == "LSTM":
     train_LSTM(datasets,

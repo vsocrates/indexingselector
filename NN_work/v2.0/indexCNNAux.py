@@ -17,7 +17,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # print(tf.__version__)
 
 # Keras
-from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
+from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D
 from keras.models import Model
 from keras import backend
 
@@ -116,10 +116,9 @@ def train_CNNAux(datasets,
     itr_validate = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset], val_batch_num)
     
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
-    print("input_dim=len(vocab_processors['text'].vocab", len(vocab_processors['text'].vocab))
     embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel],
+                                weights=[w2vmodel['text']],
                                 input_length=max_doc_lengths.abs_text_max_length,
                                 trainable=globals.EMBEDDING_TRAINABLE,
                                 name="embedding")(main_input)
@@ -136,8 +135,9 @@ def train_CNNAux(datasets,
                            activation="relu",
                            strides=1,
                            name=conv_name)(dropout1)
-      conv = MaxPooling1D(pool_size=2)(conv)
-      conv = Flatten()(conv)
+      conv = GlobalMaxPooling1D()(conv)
+      # conv = MaxPooling1D(pool_size=2)(conv)
+      # conv = Flatten()(conv)
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 
@@ -148,7 +148,7 @@ def train_CNNAux(datasets,
     aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input1")
     affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel],                                
+                                weights=[w2vmodel['affiliations']],                                
                                 trainable=globals.AUX_TRAINABLE,
                                 input_length=max_doc_lengths.affl_max_length,
                                 name="affl_embedding")(aux_input1)
@@ -160,7 +160,7 @@ def train_CNNAux(datasets,
     aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
     keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel],                                
+                                weights=[w2vmodel['keywords']],                                
                                 trainable=globals.AUX_TRAINABLE,
                                 input_length=max_doc_lengths.keyword_max_length,
                                 name="keyword_embedding")(aux_input2)
