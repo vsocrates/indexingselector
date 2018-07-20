@@ -5,6 +5,7 @@ global WITH_AUX_INFO
 global MATRIX_SIZE#  = 9000
 
 # Common Model Hyperparameters
+global AUX_TRAINABLE
 global REMOVE_STOP_WORDS
 global SHOULD_STEM
 global TRAIN_SET_PERCENTAGE#  = 0.9

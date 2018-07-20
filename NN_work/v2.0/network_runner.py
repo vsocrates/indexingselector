@@ -109,6 +109,7 @@ def parse_arguments():
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
 
   # Common Model hyperparameters  
+  parser.add_argument("-at", "--aux-trainable", help="Auxiliary information trainable", action="store_true")
   parser.add_argument("-y", "--model-type", help="Which type of model to use", required=True, choices=['CNN', 'CNNAux', 'LSTM', 'LSTMAux'])
   parser.add_argument("-o", "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
   parser.add_argument("-t", "--stem-words", help="flag to stem words in abstracts", action="store_true")
@@ -146,6 +147,7 @@ def parse_arguments():
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
 
   # Common Model Hyperparameters
+  globals.AUX_TRAINABLE = arguments.aux_trainable
   globals.MODEL_TYPE = arguments.model_type
   globals.REMOVE_STOP_WORDS = arguments.remove_stop_words
   globals.SHOULD_STEM = arguments.stem_words
