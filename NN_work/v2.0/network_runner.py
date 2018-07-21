@@ -41,6 +41,7 @@ import globals
 
 from data_utils import data_load
 from data_utils import get_word_to_vec_model
+from data_utils import Datasets
 from conditional_decorator import conditional_decorator
 from indexCNN import train_CNN
 from indexLSTM import train_LSTM
@@ -51,8 +52,38 @@ DO_TIMING_ANALYSIS = False
 
 def main(argv=None):  
   text_list = []
-
+  aug_text_list = []
+  
   datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
+  dataset_output = datasets
+
+  globals.POS_XML_FILE = "../../data/fullindex_nuclear_pubmed_result.xml"
+  if globals.POS_XML_FILE:
+    pos_datasets, pos_vocab_processors, pos_max_doc_lengths, pos_dataset_size = data_load(globals.POS_XML_FILE, aug_text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
+    
+    concat_datasets = {}
+    
+    for (name1, dataset), (name2, pos_dataset) in zip(datasets._asdict().items(),pos_datasets._asdict().items()):
+      # print(name1)
+      # print(dataset)
+      # print(name2)
+      # print(pos_dataset)
+      concat_datasets[name1] = dataset.concatenate(pos_dataset)
+    
+    dataset_output = Datasets(abs_text_train_dataset=concat_datasets['abs_text_train_dataset'],
+                                  abs_text_test_dataset=concat_datasets['abs_text_test_dataset'],
+                                  jrnl_title_train_dataset=concat_datasets['jrnl_title_train_dataset'],
+                                  jrnl_title_test_dataset=concat_datasets['jrnl_title_test_dataset'],
+                                  art_title_train_dataset=concat_datasets['art_title_train_dataset'],
+                                  art_title_test_dataset=concat_datasets['art_title_test_dataset'],
+                                  affl_train_dataset=concat_datasets['affl_train_dataset'],
+                                  affl_test_dataset=concat_datasets['affl_test_dataset'],
+                                  keyword_train_dataset=concat_datasets['keyword_train_dataset'],
+                                  keyword_test_dataset=concat_datasets['keyword_test_dataset'])
+  
+  
+  print(concat_datasets)
+    
   print("again: ", max_doc_lengths)
   model_list = {}
   if globals.PRETRAINED_W2V_PATH:
@@ -62,14 +93,14 @@ def main(argv=None):
     model_list['keywords'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "keywords")
     
   if globals.MODEL_TYPE == 'CNN':
-    train_CNN(datasets,
+    train_CNN(concat_dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
               w2vmodel=model_list['text'],
               )
   elif globals.MODEL_TYPE == "CNNAux":
-    train_CNNAux(datasets,
+    train_CNNAux(concat_dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
@@ -105,6 +136,7 @@ def parse_arguments():
 
   # Data loading params
   parser.add_argument("-f", "--data-file", help="location of data file", required=True)
+  parser.add_argument("-pd", "--pos-data-file", help="location of fully indexed article file")
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)

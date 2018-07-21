@@ -175,7 +175,6 @@ def train_CNN(datasets,
                         verbose=verbosity,
                         workers=0,
                         callbacks=callbacks)
-    print("METETWERWERWER: ", model.metrics[1].true_positives)
     
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
