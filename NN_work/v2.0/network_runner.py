@@ -93,28 +93,28 @@ def main(argv=None):
     model_list['keywords'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "keywords")
     
   if globals.MODEL_TYPE == 'CNN':
-    train_CNN(concat_dataset_output,
+    train_CNN(dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
               w2vmodel=model_list['text'],
               )
   elif globals.MODEL_TYPE == "CNNAux":
-    train_CNNAux(concat_dataset_output,
+    train_CNNAux(dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
               w2vmodel=model_list,
               )
   elif globals.MODEL_TYPE == "LSTM":
-    train_LSTM(datasets,
+    train_LSTM(dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
               w2vmodel=model,
               )
   elif globals.MODEL_TYPE == "LSTMAux":
-    train_LSTMAux(datasets,
+    train_LSTMAux(dataset_output,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
