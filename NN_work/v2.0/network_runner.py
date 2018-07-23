@@ -81,7 +81,7 @@ def main(argv=None):
                                   keyword_test_dataset=concat_datasets['keyword_test_dataset'])
   
   
-  print(concat_datasets)
+    print(concat_datasets)
     
   print("again: ", max_doc_lengths)
   model_list = {}
