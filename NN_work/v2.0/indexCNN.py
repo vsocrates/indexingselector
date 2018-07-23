@@ -17,7 +17,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # print(tf.__version__)
 
 # Keras
-from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate
+from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D
 from keras.models import Model
 from keras import backend
 
@@ -119,8 +119,9 @@ def train_CNN(datasets,
                            activation="relu",
                            strides=1,
                            name=conv_name)(dropout1)
-      conv = MaxPooling1D(pool_size=2)(conv)
-      conv = Flatten()(conv)
+      conv = GlobalMaxPooling1D()(conv)
+      # conv = MaxPooling1D(pool_size=2)(conv)
+      # conv = Flatten()(conv)
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 

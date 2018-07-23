@@ -57,7 +57,6 @@ def main(argv=None):
   datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
   dataset_output = datasets
 
-  globals.POS_XML_FILE = "../../data/fullindex_nuclear_pubmed_result.xml"
   if globals.POS_XML_FILE:
     pos_datasets, pos_vocab_processors, pos_max_doc_lengths, pos_dataset_size = data_load(globals.POS_XML_FILE, aug_text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
     
@@ -136,7 +135,7 @@ def parse_arguments():
 
   # Data loading params
   parser.add_argument("-f", "--data-file", help="location of data file", required=True)
-  parser.add_argument("-pd", "--pos-data-file", help="location of fully indexed article file")
+  parser.add_argument("-pd", "--pos-data-file", help="location of fully indexed article file", default="")
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
   parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
@@ -175,6 +174,7 @@ def parse_arguments():
 
   arguments = parser.parse_args()
   globals.XML_FILE = arguments.data_file
+  globals.POS_XML_FILE = arguments.pos_data_file
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
   globals.WITH_AUX_INFO = arguments.get_aux_info
   globals.MATRIX_SIZE = arguments.word2vec_size
