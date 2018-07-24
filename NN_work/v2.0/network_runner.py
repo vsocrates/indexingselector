@@ -86,14 +86,14 @@ def main(argv=None):
               vocab_processors,
               max_doc_lengths,
               dataset_size,
-              w2vmodel=model,
+              w2vmodel=model_list['text'],
               )
   elif globals.MODEL_TYPE == "LSTMAux":
     train_LSTMAux(datasets,
               vocab_processors,
               max_doc_lengths,
               dataset_size,
-              w2vmodel=model,
+              w2vmodel=model_list,
               )           
   else:
     print("I don't know how this happened, should be impossible")

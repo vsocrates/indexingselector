@@ -119,9 +119,10 @@ def train_CNN(datasets,
                            activation="relu",
                            strides=1,
                            name=conv_name)(dropout1)
-      conv = GlobalMaxPooling1D()(conv)
-      # conv = MaxPooling1D(pool_size=2)(conv)
-      # conv = Flatten()(conv)
+      # Found to be worse than sliding window maxpooling 
+      # conv = GlobalMaxPooling1D()(conv)
+      conv = MaxPooling1D(pool_size=2)(conv)
+      conv = Flatten()(conv)
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 
