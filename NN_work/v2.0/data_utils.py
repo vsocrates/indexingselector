@@ -185,6 +185,7 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
   global NUM_NEG
   NUM_POS = 0
   NUM_NEG = 0
+  
   # we are timing the abstract text data pull
   start_time = time.time()
   with open(xml_file, "rb") as xmlf:
@@ -192,7 +193,10 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
     fast_iter(context, get_abstract_text_with_targets_and_metadata, text_list)
     
   end_time = time.time()
-  
+  # we need to save a local copy, since the NUM_POS and NUM_NEG globals will continue to increased
+  local_num_pos = NUM_POS
+  local_num_neg = NUM_NEG
+
   print("Num of pos articles in text_list: ", NUM_POS)
   print("Num of neg articles in text_list: ", NUM_NEG)
   print("Num of total articles in text_list: ", len(text_list))
@@ -206,15 +210,18 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
       fast_iter(context, get_abstract_text_with_targets_and_metadata, pos_text_list)
       
     end_time = time.time()
-    
     print("Num of pos ex articles: ", len(pos_text_list))
     print("Data size of Pos Ex Articles (bytes): ", get_size(pos_text_list))
     print("Parsing for Pos Ex articles took: --- %s seconds ---" % (end_time - start_time))
   
-  text_list = text_list + pos_text_list
-  # there's no need to shuffle now.
-  # np.random.shuffle(text_list)
+  # add positive examples to entire dataset
+  np.random.shuffle(pos_text_list)
+  if local_num_neg > local_num_pos:
+    diff = local_num_neg - local_num_pos
+    text_list = text_list + pos_text_list[0:diff]
 
+  print("Num of articles after pos ex addition: ",len(text_list))
+  
   # we use nltk to word tokenize
   vocab_proc_dict = {}
   if with_aux_info:
