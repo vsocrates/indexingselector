@@ -61,13 +61,15 @@ def main(argv=None):
     pos_datasets, pos_vocab_processors, pos_max_doc_lengths, pos_dataset_size = data_load(globals.POS_XML_FILE, aug_text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, None, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO)
     
     concat_datasets = {}
-    
     for (name1, dataset), (name2, pos_dataset) in zip(datasets._asdict().items(),pos_datasets._asdict().items()):
       # print(name1)
       # print(dataset)
       # print(name2)
       # print(pos_dataset)
-      concat_datasets[name1] = dataset.concatenate(pos_dataset)
+      if dataset:
+        concat_datasets[name1] = dataset.concatenate(pos_dataset)
+      else:
+        concat_datasets[name1] = None
     
     dataset_output = Datasets(abs_text_train_dataset=concat_datasets['abs_text_train_dataset'],
                                   abs_text_test_dataset=concat_datasets['abs_text_test_dataset'],
@@ -175,8 +177,13 @@ def parse_arguments():
   arguments = parser.parse_args()
   globals.XML_FILE = arguments.data_file
   globals.POS_XML_FILE = arguments.pos_data_file
-  globals.PRETRAINED_W2V_PATH = arguments.w2v_path
+  # We want aux info if we have 
+  # if globals.POS_XML_FILE:
+    # globals.WITH_AUX_INFO = True
+  # else:
   globals.WITH_AUX_INFO = arguments.get_aux_info
+  
+  globals.PRETRAINED_W2V_PATH = arguments.w2v_path
   globals.MATRIX_SIZE = arguments.word2vec_size
   globals.LIMIT_VOCAB = arguments.no_limit_vocab
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
