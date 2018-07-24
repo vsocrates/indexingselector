@@ -54,11 +54,11 @@ def main(argv=None):
   text_list = []
   aug_text_list = []
   
-  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
+  datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, None, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO)
   dataset_output = datasets
 
   if globals.POS_XML_FILE:
-    pos_datasets, pos_vocab_processors, pos_max_doc_lengths, pos_dataset_size = data_load(globals.POS_XML_FILE, aug_text_list, globals.BATCH_SIZE, globals.TRAIN_SET_PERCENTAGE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, with_aux_info=globals.WITH_AUX_INFO)
+    pos_datasets, pos_vocab_processors, pos_max_doc_lengths, pos_dataset_size = data_load(globals.POS_XML_FILE, aug_text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, None, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO)
     
     concat_datasets = {}
     
@@ -181,7 +181,7 @@ def parse_arguments():
   globals.LIMIT_VOCAB = arguments.no_limit_vocab
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
   globals.VOCAB_LOWERCASE = arguments.lower_vocab
-  
+  globals.SPLIT_WITH_DATE = False
   # Common Model Hyperparameters
   globals.AUX_TRAINABLE = arguments.aux_trainable
   globals.MODEL_TYPE = arguments.model_type

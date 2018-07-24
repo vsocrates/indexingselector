@@ -19,9 +19,6 @@ import tensorflow as tf
 from tensorflow.python.keras.preprocessing import sequence
 from tensorflow.python.platform import gfile
 
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-
 import globals
 
 UNK = "<UNK>"
@@ -30,7 +27,7 @@ EOS = "<EOS>"
 
 class VocabProcessor:
   
-  def __init__(self, tokenizer_fn, batch_size, train_size, remove_stop_words, should_stem, limit_vocab=True, max_vocab_size=80000):
+  def __init__(self, tokenizer_fn, batch_size, remove_stop_words, should_stem, limit_vocab=True, max_vocab_size=80000):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
     self.vocab[UNK] = 0
@@ -41,7 +38,6 @@ class VocabProcessor:
     self.reverse_vocab = {}
 
     self.batch_size = batch_size
-    self.test_size = round(1.0 - train_size, 2)
     self.remove_stop_words = remove_stop_words
     self.should_stem = should_stem
     self.limit_vocab = limit_vocab

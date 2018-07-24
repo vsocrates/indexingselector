@@ -1,4 +1,5 @@
 import time
+import datetime
 import sys
 import math
 import collections 
@@ -105,6 +106,7 @@ def fast_iter(context, func, *args, **kwargs):
       root.clear()
   del context
 
+  # Deprecated, not used
 def get_abstract_text_with_targets(elem, output_list):
   cit_dict = {}
   
@@ -133,6 +135,12 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   authors = elem.find(".//AuthorList")
   keywords = elem.find(".//KeywordList")
   
+  dcom = medline_cit_tag.find(".//DateCompleted")
+  dcom_year = etree.tostring(dcom.find("Year"), method="text", with_tail=False, encoding='unicode')
+  dcom_month = etree.tostring(dcom.find("Month"), method="text", with_tail=False, encoding='unicode')
+  dcom_day = etree.tostring(dcom.find("Day"), method="text", with_tail=False, encoding='unicode')
+  dcom_date = datetime.date(int(dcom_year), int(dcom_month), int(dcom_day))
+  
   if(output_text is not None):
     cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
@@ -157,12 +165,14 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
 
   cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
   cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
+  cit_dict['dcom'] = dcom_date
+  
   # print("cit_dict: ", cit_dict['affiliations'])
   # print('citation: ', cit_dict)
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, with_aux_info=False):
+def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, test_date=None, train_size=0.0, with_aux_info=False):
 
   # we are timing the abstract text data pull
   start_time = time.time()
@@ -176,22 +186,23 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, sh
   print("Data size (bytes): ", get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
-  np.random.shuffle(text_list)
+  # there's no need to shuffle now.
+  # np.random.shuffle(text_list)
 
   # we use nltk to word tokenize
   vocab_proc_dict = {}
   if with_aux_info:
     # because there are 5 things we want (including raw abstract text)
     for name in ["text", "journal_title", "article_title", "affiliations", "keywords"]:
-      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
+      vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
       
     
-    datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list)
+    datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list, test_date, train_size)
   else:
-    count_vect = VocabProcessor(word_tokenize, batch_size, train_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
+    count_vect = VocabProcessor(word_tokenize, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
     # this function creates the datasets using the vocab.py file
     vocab_proc_dict = {"text":count_vect}
-    datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list)
+    datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list, test_date, train_size)
         
   print("Vocabulary Size: ", len(vocab_proc_dict['text'].vocab))
   # print("vocab", vocab_proc_dict['text'].token_counter)
@@ -213,7 +224,7 @@ def data_load(xml_file, text_list, batch_size, train_size, remove_stop_words, sh
     sequence_ex_list: the Dataset taken from from_tensor_slices containing all data per training example
 """
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
+def prepare_data_text_only(vocab_proc_dict, doc_data_list, test_date, train_size, save_records=False):
   vocab_processor = vocab_proc_dict['text']
   vocab_processor.reset_processor()
   # first we want to split up the text in all the docs and make the vocab
@@ -248,7 +259,7 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
   # TODO: will eventually have to replace this with cross-validation
 
   # we'll randomize the data and create train and test datasets using scikit here: 
-  X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=vocab_processor.test_size, random_state=42, shuffle=True)
+  X_train, X_test, Y_train, Y_test = train_test_split(all_word_id_list, labels, test_size=round(1.0-train_size, 2), random_state=42, shuffle=True)
 
   train_tuple = zip(X_train, Y_train)
   test_tuple = zip(X_test, Y_test)
@@ -291,7 +302,7 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, save_records=False):
   return return_datasets, all_max_lengths
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=False):
+def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_size, save_records=False):
   # shouldn't actually need to do this, but just in case.
   for name, processor in vocab_proc_dict.items():
     processor.reset_processor()
@@ -311,6 +322,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
   art_title_ids = []
   affiliation_ids = []
   keyword_ids = []
+  
+  train_test_tracker = []
   
   max_doc_length = 0 
   max_jrnl_title_length = 0
@@ -362,6 +375,13 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
     elif doc['target'] == "PubMed-not-MEDLINE":
       labels.append([0])
   
+    # Keep track of train or test, by date
+    # if doc['dcom'] > test_date:
+      # train_test_tracker.append(1)
+    # else:
+      # train_test_tracker.append(0)
+  
+  print("train_test_tracker test", train_test_tracker)
   print("affiliation test: ", idx_hold)
   # we are adding start and end tags
   # for doc in abs_text_word_ids:
@@ -377,19 +397,35 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
 
   # this is gross.
   # we'll randomize the data and create train and test datasets using scikit here: 
-  abs_text_train, abs_text_test, \
-  jrnl_title_train, jrnl_title_test, \
-  art_title_train, art_title_test, \
-  affl_train, affl_test, \
-  keyword_train, keyword_test, \
-  labels_train, labels_test = train_test_split(abs_text_word_ids,
-                                              jrnl_title_ids,
-                                              art_title_ids,
-                                              affiliation_ids,
-                                              keyword_ids,
-                                              labels,
-                                              test_size=text_vocab_proc.test_size, random_state=42, shuffle=True)
-
+  if not globals.SPLIT_WITH_DATE:
+    abs_text_train, abs_text_test, \
+    jrnl_title_train, jrnl_title_test, \
+    art_title_train, art_title_test, \
+    affl_train, affl_test, \
+    keyword_train, keyword_test, \
+    labels_train, labels_test = train_test_split(abs_text_word_ids,
+                                                jrnl_title_ids,
+                                                art_title_ids,
+                                                affiliation_ids,
+                                                keyword_ids,
+                                                labels,
+                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=True)
+  else:
+    abs_text_train, abs_text_test, \
+    jrnl_title_train, jrnl_title_test, \
+    art_title_train, art_title_test, \
+    affl_train, affl_test, \
+    keyword_train, keyword_test, \
+    labels_train, labels_test = train_test_split_with_date(abs_text_word_ids,
+                                                jrnl_title_ids,
+                                                art_title_ids,
+                                                affiliation_ids,
+                                                keyword_ids,
+                                                labels,
+                                                
+                                                date=test_date, 
+                                                shuffle=True)
+    
   # these are the generators used to create the datasets
   # we can't make just one method yet since the generators need to be callables with no params right now. 
   # This is an open issue on stackoverflow: https://github.com/tensorflow/tensorflow/issues/13101
@@ -533,6 +569,9 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, save_records=Fals
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
+  
+def train_test_split_with_date(*arrays, date, shuffle=True):
+  pass
   
 # ------------------------- W2V Gensim Loading Method  ------------------------- 
 
