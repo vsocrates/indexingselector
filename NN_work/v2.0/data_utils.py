@@ -125,6 +125,8 @@ def get_abstract_text_with_targets(elem, output_list):
   output_list.append(cit_dict)
     
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
+  global NUM_POS
+  global NUM_NEG
   cit_dict = {}
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
@@ -160,6 +162,12 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
     words = []
 
   cit_dict["target"] = medline_cit_tag.get("Status")
+  
+  if cit_dict["target"] == "MEDLINE":
+    NUM_POS += 1
+  elif cit_dict['target'] == "PubMed-not-MEDLINE":
+    NUM_NEG += 1
+
   cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
   cit_dict["article_title"] = etree.tostring(article_title_tag, method="text", with_tail=False, encoding='unicode')
 
@@ -172,8 +180,11 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, test_date=None, train_size=0.0, with_aux_info=False):
-
+def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, train_size=0.0, with_aux_info=False, pos_text_list=None, test_date=None):
+  global NUM_POS
+  global NUM_NEG
+  NUM_POS = 0
+  NUM_NEG = 0
   # we are timing the abstract text data pull
   start_time = time.time()
   with open(xml_file, "rb") as xmlf:
@@ -182,10 +193,25 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
     
   end_time = time.time()
   
-  print("Num of articles: ", len(text_list))
+  print("Num of pos articles in text_list: ", NUM_POS)
+  print("Num of neg articles in text_list: ", NUM_NEG)
+  print("Num of total articles in text_list: ", len(text_list))
   print("Data size (bytes): ", get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
+  if globals.POS_XML_FILE:
+    start_time = time.time()
+    with open(globals.POS_XML_FILE, "rb") as xmlf:
+      context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
+      fast_iter(context, get_abstract_text_with_targets_and_metadata, pos_text_list)
+      
+    end_time = time.time()
+    
+    print("Num of pos ex articles: ", len(pos_text_list))
+    print("Data size of Pos Ex Articles (bytes): ", get_size(pos_text_list))
+    print("Parsing for Pos Ex articles took: --- %s seconds ---" % (end_time - start_time))
+  
+  text_list = text_list + pos_text_list
   # there's no need to shuffle now.
   # np.random.shuffle(text_list)
 
@@ -381,8 +407,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     # else:
       # train_test_tracker.append(0)
   
-  print("train_test_tracker test", train_test_tracker)
-  print("affiliation test: ", idx_hold)
+  # print("train_test_tracker test", train_test_tracker)
+  # print("affiliation test: ", idx_hold)
   # we are adding start and end tags
   # for doc in abs_text_word_ids:
     # doc.insert(0, 1)

@@ -40,4 +40,8 @@ global ALLOW_SOFT_PLACEMENT
 ALLOW_SOFT_PLACEMENT=False
 global LOG_DEVICE_PLACEMENT
 LOG_DEVICE_PLACEMENT=False
+
+# Non-user-specified globals for use internally
+global NUM_POS
+global NUM_NEG
      
