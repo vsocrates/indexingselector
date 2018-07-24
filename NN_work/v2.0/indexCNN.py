@@ -111,8 +111,8 @@ def train_CNN(datasets,
     
     # Convolutional block
     conv_blocks = []
-    for sz in globals.FILTER_SIZES:
-      conv_name = "conv1D-%s" % sz
+    for idx, sz in enumerate(globals.FILTER_SIZES):
+      conv_name = "conv1D-%s%s" % (idx, sz)
       conv = Convolution1D(filters=globals.NUM_FILTERS,
                            kernel_size=sz,
                            padding="valid",
