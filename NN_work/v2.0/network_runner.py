@@ -58,7 +58,7 @@ def main(argv=None):
     aug_text_list = []
     datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=aug_text_list, test_date=None)
   else:
-    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=None, test_date=None)
+    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=[], test_date=None)
     
   model_list = {}
   if globals.PRETRAINED_W2V_PATH:

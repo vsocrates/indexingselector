@@ -180,7 +180,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
-def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, train_size=0.0, with_aux_info=False, pos_text_list=None, test_date=None):
+def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, train_size=0.0, with_aux_info=False, pos_text_list=[], test_date=None):
   global NUM_POS
   global NUM_NEG
   NUM_POS = 0
