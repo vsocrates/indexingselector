@@ -165,6 +165,8 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   if cit_dict["target"] == "MEDLINE":
     NUM_POS += 1
+    # print([etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations])
+    # print("\n")
   elif cit_dict['target'] == "PubMed-not-MEDLINE":
     NUM_NEG += 1
 

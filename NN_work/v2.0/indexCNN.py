@@ -128,6 +128,8 @@ def train_CNN(datasets,
 
     dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1])(conv_blocks_concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dropout2)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid")(dense)
 
     # stochastic gradient descent algo, currently unused

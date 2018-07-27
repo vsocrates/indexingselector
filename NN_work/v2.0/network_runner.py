@@ -162,6 +162,8 @@ def parse_arguments():
   # Common Model Hyperparameters
   globals.AUX_TRAINABLE = arguments.aux_trainable
   globals.MODEL_TYPE = arguments.model_type
+  if globals.MODEL_TYPE.find("Aux"):
+    globals.WITH_AUX_INFO = True
   globals.REMOVE_STOP_WORDS = arguments.remove_stop_words
   globals.SHOULD_STEM = arguments.stem_words
   globals.TRAIN_SET_PERCENTAGE = arguments.train_percentage

@@ -207,17 +207,15 @@ def train_CNNAux(datasets,
     F1score = F1Score()
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
-                  metrics=['accuracy',
-    recall,
-    precision,
-    F1score])
+      metrics=['accuracy', recall, precision, F1score], 
+      loss_weights=[1., 0.5]
+    )
                            # truepos_metricfn,
                            # trueneg_metricfn,
                            # falsepos_metricfn,
                            # falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
-                  # loss_weights=[1., 0.2]
     
     callbacks = []
     # callbacks.append(EarlyStopping(monitor="val_))
@@ -240,6 +238,7 @@ def train_CNNAux(datasets,
                         steps_per_epoch=train_batch_num,
                         epochs=globals.NUM_EPOCHS,
                         verbose=verbosity,
+                        # class_weight={0:0.2, 1:1.0},
                         workers=0,
                         callbacks=callbacks)
                         
