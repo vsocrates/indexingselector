@@ -93,11 +93,6 @@ def train_CNNAux(datasets,
             for vals in next_val_list:
               try:
                 *inputs, labels = sess.run(vals)
-                # print("what are they?: ")
-                # print(inputs)
-                # print(labels)
-                # print("\n")
-                
                 # this is the only thing in the list, idk why its in there. 
                 value_list.append(inputs[0])
                 # label_temp = labels
@@ -119,8 +114,10 @@ def train_CNNAux(datasets,
     train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
 
-    itr_train = make_multiple_iterator([datasets.abs_text_train_dataset,datasets.affl_train_dataset, datasets.keyword_train_dataset], train_batch_num)
-    itr_validate = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset], val_batch_num)
+    itr_train = make_multiple_iterator([datasets.abs_text_train_dataset,datasets.affl_train_dataset],#, datasets.keyword_train_dataset],
+    train_batch_num)
+    itr_validate = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset],#, datasets.keyword_train_dataset],
+    val_batch_num)
     
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
     embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
@@ -142,9 +139,9 @@ def train_CNNAux(datasets,
                            activation="relu",
                            strides=1,
                            name=conv_name)(dropout1)
-      conv = GlobalMaxPooling1D()(conv)
-      # conv = MaxPooling1D(pool_size=2)(conv)
-      # conv = Flatten()(conv)
+      # conv = GlobalMaxPooling1D()(conv)
+      conv = MaxPooling1D(pool_size=2)(conv)
+      conv = Flatten()(conv)
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 
@@ -164,16 +161,16 @@ def train_CNNAux(datasets,
     auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout1")(affl_embedding_layer)
 
     # auxiliary information 2
-    aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
-    keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
-                                output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['keywords']],                                
-                                trainable=globals.AUX_TRAINABLE,
-                                input_length=max_doc_lengths.keyword_max_length,
-                                name="keyword_embedding")(aux_input2)
+    # aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
+    # keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
+                                # output_dim=globals.EMBEDDING_DIM,
+                                # weights=[w2vmodel['keywords']],                                
+                                # trainable=globals.AUX_TRAINABLE,
+                                # input_length=max_doc_lengths.keyword_max_length,
+                                # name="keyword_embedding")(aux_input2)
 
-    keyword_embedding_layer = Flatten()(keyword_embedding_layer)
-    auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout2")(keyword_embedding_layer)    
+    # keyword_embedding_layer = Flatten()(keyword_embedding_layer)
+    # auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout2")(keyword_embedding_layer)    
 
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
@@ -195,20 +192,24 @@ def train_CNNAux(datasets,
     
     
     # Merge layers and into dense for final output
-    concat = Concatenate()([dropout2, auxdropout1, auxdropout2])
+    concat = Concatenate()([dropout2, auxdropout1])#, auxdropout2])
     
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
 
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=0.01)
 
-    model = Model(inputs=[main_input, aux_input1, aux_input2], outputs=[model_output])
+    model = Model(inputs=[main_input, aux_input1
+      #, aux_input2
+      ], outputs=[model_output])
     
-    truepos_metricfn = BinaryTruePositives()
-    trueneg_metricfn = BinaryTrueNegatives()
-    falsepos_metricfn = BinaryFalsePositives()
-    falseneg_metricfn = BinaryFalseNegatives()
+    # truepos_metricfn = BinaryTruePositives()
+    # trueneg_metricfn = BinaryTrueNegatives()
+    # falsepos_metricfn = BinaryFalsePositives()
+    # falseneg_metricfn = BinaryFalseNegatives()
     recall = Recall()
     precision = Precision()
     F1score = F1Score()

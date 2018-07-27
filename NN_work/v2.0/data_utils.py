@@ -391,8 +391,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     art_title_ids.append(word_id_list)
 
     tokens = affil_vocab_proc.tokenize(str(doc['affiliations']))
-    # print("affiliations tokesN: ", tokens)
-    word_id_list = affil_vocab_proc.tokens_to_id_list(tokens)      
+    # print("affiliations tokesN: ", set(tokens))
+    word_id_list = affil_vocab_proc.tokens_to_id_list(list(set(tokens)))
     if len(word_id_list) > max_affl_length:
       max_affl_length = len(word_id_list)
       idx_hold = tokens
