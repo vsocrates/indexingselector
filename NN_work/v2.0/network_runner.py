@@ -114,7 +114,7 @@ def parse_arguments():
   parser.add_argument("-pd", "--pos-data-file", help="location of fully indexed article file", default="")
   parser.add_argument("-w", "--w2v-path", help="location of pre-trained w2v model file")
   parser.add_argument("-x","--get-aux-info",help="retrieve the auxiliary information from the data file", action="store_true")
-  parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model", type=int, default=200)
+  parser.add_argument("-v", "--word2vec-size", help="get the first N words from pre-trained word2vec model")
   parser.add_argument("-c", "--no-limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
   parser.add_argument("-lw", "--lower-vocab", help="make vocab lowercase", action="store_true")
@@ -154,7 +154,12 @@ def parse_arguments():
   globals.WITH_AUX_INFO = arguments.get_aux_info
   
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
-  globals.MATRIX_SIZE = arguments.word2vec_size
+  try:
+    w2v_size = int(arguments.word2vec_size)
+  except TypeError:
+    w2v_size = None
+  globals.MATRIX_SIZE = w2v_size 
+  print("globals.MATRIX_SIZE" , globals.MATRIX_SIZE)
   globals.LIMIT_VOCAB = arguments.no_limit_vocab
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
   globals.VOCAB_LOWERCASE = arguments.lower_vocab

@@ -93,8 +93,15 @@ def train_CNNAux(datasets,
             for vals in next_val_list:
               try:
                 *inputs, labels = sess.run(vals)
+                # print("what are they?: ")
+                # print(inputs)
+                # print(labels)
+                # print("\n")
+                
+                # this is the only thing in the list, idk why its in there. 
                 value_list.append(inputs[0])
-                label_temp = labels
+                # label_temp = labels
+                # labels_out.append(labels)
                 # yield inputs, labels  
               except tf.errors.OutOfRangeError:
                 if globals.DEBUG:
@@ -105,7 +112,7 @@ def train_CNNAux(datasets,
                   print(e)
                   print("Unknown Exception Thrown")
                 break
-            labels_out.append(labels) # for aux output
+            # labels_out.append(labels) # for aux output
             labels_out.append(labels) # for main output
             yield value_list, labels_out
 
@@ -196,7 +203,7 @@ def train_CNNAux(datasets,
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=0.01)
 
-    model = Model(inputs=[main_input, aux_input1, aux_input2], outputs=[model_output, auxiliary_output])
+    model = Model(inputs=[main_input, aux_input1, aux_input2], outputs=[model_output])
     
     truepos_metricfn = BinaryTruePositives()
     trueneg_metricfn = BinaryTrueNegatives()
@@ -208,7 +215,7 @@ def train_CNNAux(datasets,
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
       metrics=['accuracy', recall, precision, F1score], 
-      loss_weights=[1., 0.5]
+      # loss_weights=[1., 0.0]
     )
                            # truepos_metricfn,
                            # trueneg_metricfn,
