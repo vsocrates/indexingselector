@@ -17,7 +17,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # print(tf.__version__)
 
 # Keras
-from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D
+from keras.layers import Input, Embedding, Lambda, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D
 from keras.models import Model
 from keras import backend
 
@@ -30,7 +30,7 @@ from keras.callbacks import ModelCheckpoint
 
 from keras.optimizers import SGD
 from keras.optimizers import Adam
-
+from keras.layers.advanced_activations import PReLU
 # gensim
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
@@ -125,7 +125,10 @@ def train_CNN(datasets,
       conv = Flatten()(conv)
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
-
+    
+    act = PReLU(init='zero', weights=None)
+    softmax = Lambda(lambda x: backend.tf.nn.softmax(x))
+    
     dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1])(conv_blocks_concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dropout2)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)

@@ -97,8 +97,7 @@ class VocabProcessor:
   def tokenize(self, text):
       words = self.tokenizer(text)
     
-      # currently, the stop word removal doesn't change all the words to lowercase.
-      # 7-17-18 1:12 PM Testing with lowercase all words
+      # 7-17-18 1:12 PM Testing with lowercase all words, works, switched to this!
       if self.remove_stop_words:
         if globals.VOCAB_LOWERCASE:
           words = [word.lower() for word in words if word.lower() not in self.remove_word_set]

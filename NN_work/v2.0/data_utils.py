@@ -3,6 +3,8 @@ import datetime
 import sys
 import math
 import collections 
+import re 
+import string 
 
 from profilehooks import profile
 import gensim 
@@ -42,7 +44,9 @@ Dataset_Max_Lengths = collections.namedtuple('Dataset_Max_Lengths', ["abs_text_m
                                                                     ])
 
 DO_TIMING_ANALYSIS = False 
-                                                               
+AFFL_DEPT_LIST = ["faculty", "school", "division", "department", "center", "centre", "institute", "division", "laboratory", "college", "bureau", "agency", "program", "academy", "instituto", "archive"]
+
+
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -390,8 +394,18 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
       max_art_title_length = len(word_id_list)
     art_title_ids.append(word_id_list)
 
-    tokens = affil_vocab_proc.tokenize(str(doc['affiliations']))
-    # print("affiliations tokesN: ", set(tokens))
+    punc_without_dash = string.punctuation.replace("-", "")
+    punc_pattern = "["+ "".join(punc_without_dash) + "]"
+    words_by_punc = re.split(punc_pattern, str(doc['affiliations']))
+    affl_clean = ""
+    for section in words_by_punc:
+      if any(word in section.lower() for word in AFFL_DEPT_LIST):
+        affl_clean = section
+        break
+    
+    # tokens = affil_vocab_proc.tokenize(str(doc['affiliations']))
+    tokens = affil_vocab_proc.tokenize(section)
+    # print("affiliations tokesN: ", section)
     word_id_list = affil_vocab_proc.tokens_to_id_list(list(set(tokens)))
     if len(word_id_list) > max_affl_length:
       max_affl_length = len(word_id_list)
