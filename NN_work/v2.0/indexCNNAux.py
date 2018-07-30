@@ -114,9 +114,11 @@ def train_CNNAux(datasets,
     train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
 
-    itr_train = make_multiple_iterator([datasets.abs_text_train_dataset,datasets.affl_train_dataset, datasets.keyword_train_dataset],
+    itr_train = make_multiple_iterator(
+    [datasets.abs_text_train_dataset, datasets.affl_train_dataset, datasets.keyword_train_dataset, datasets.art_title_train_dataset],
     train_batch_num)
-    itr_validate = make_multiple_iterator([datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset],
+    itr_validate = make_multiple_iterator(
+    [datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset, datasets.art_title_test_dataset],
     val_batch_num)
     
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
@@ -148,8 +150,8 @@ def train_CNNAux(datasets,
     dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name="dropout2")(conv_blocks_concat)
     auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
-    # auxiliary information 1
-    aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input1")
+    # auxiliary information 1: affiliations
+    aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
     affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
                                 weights=[w2vmodel['affiliations']],                                
@@ -158,9 +160,9 @@ def train_CNNAux(datasets,
                                 name="affl_embedding")(aux_input1)
 
     affl_embedding_layer = Flatten()(affl_embedding_layer)
-    auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout1")(affl_embedding_layer)
+    auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="affldropout")(affl_embedding_layer)
 
-    # auxiliary information 2
+    # auxiliary information 2: keywords
     aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
     keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
@@ -170,8 +172,21 @@ def train_CNNAux(datasets,
                                 name="keyword_embedding")(aux_input2)
 
     keyword_embedding_layer = Flatten()(keyword_embedding_layer)
-    auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="auxdropout2")(keyword_embedding_layer)    
+    auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
 
+    # auxiliary information 3: article titles
+    aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
+    art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
+                                output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel['article_title']],                                
+                                trainable=globals.AUX_TRAINABLE,
+                                input_length=max_doc_lengths.art_title_max_length,
+                                name="art_title_embedding")(aux_input3)
+
+    art_title_embedding_layer = Flatten()(art_title_embedding_layer)
+    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
+    
+    
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
     # for sz in FILTER_SIZES:
@@ -192,7 +207,7 @@ def train_CNNAux(datasets,
     
     
     # Merge layers and into dense for final output
-    concat = Concatenate()([dropout2, auxdropout1, auxdropout2])
+    concat = Concatenate()([dropout2, auxdropout1, auxdropout2, auxdropout3])
     
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
@@ -203,7 +218,8 @@ def train_CNNAux(datasets,
     opt = SGD(lr=0.01)
 
     model = Model(inputs=[main_input, aux_input1
-      , aux_input2
+      , aux_input2,
+      aux_input3
       ], outputs=[model_output])
     
     # truepos_metricfn = BinaryTruePositives()

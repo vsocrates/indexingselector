@@ -388,6 +388,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     jrnl_title_ids.append(word_id_list)
 
     tokens = art_title_vocab_proc.tokenize(str(doc['article_title']))
+    # print("article before tokens: ", str(doc['article_title']))
     # print("article title tokesN: ", tokens)
     word_id_list = art_title_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_art_title_length:

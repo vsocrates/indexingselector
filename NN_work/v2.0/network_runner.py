@@ -66,6 +66,7 @@ def main(argv=None):
   if globals.WITH_AUX_INFO:
     model_list['affiliations'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "affiliations")
     model_list['keywords'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "keywords")
+    model_list['article_title'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "article_title")
     
   if globals.MODEL_TYPE == 'CNN':
     train_CNN(datasets,
