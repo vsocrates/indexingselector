@@ -1,6 +1,7 @@
 # Vanilla Python
 import os
 import string
+from datetime import datetime
 import re
 import argparse
 from profilehooks import profile
@@ -56,9 +57,9 @@ def main(argv=None):
   
   if globals.POS_XML_FILE:
     aug_text_list = []
-    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=aug_text_list, test_date=None)
+    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=aug_text_list, test_date=globals.SPLIT_WITH_DATE)
   else:
-    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=[], test_date=None)
+    datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=[], test_date=globals.SPLIT_WITH_DATE)
     
   model_list = {}
   if globals.PRETRAINED_W2V_PATH:
@@ -108,6 +109,16 @@ def parse_arguments():
           raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
       return x
 
+  def valid_date(s):
+      if s == "":
+        return
+      try:
+          return datetime.strptime(s, "%Y-%m-%d").date()
+      except ValueError:
+          msg = "Not a valid date: '{0}'.".format(s)
+          raise argparse.ArgumentTypeError(msg)
+      
+      
   parser = argparse.ArgumentParser()
 
   # Data loading params
@@ -119,6 +130,8 @@ def parse_arguments():
   parser.add_argument("-c", "--no-limit-vocab", help="DON'T limit the size of the vocab (default true)", action="store_false")
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
   parser.add_argument("-lw", "--lower-vocab", help="make vocab lowercase", action="store_true")
+  parser.add_argument("-sd", "--split-by-date", help="Split test/train by date. Overrides percentage selection - format YYYY-MM-DD", type=valid_date, default="")
+  
   # Common Model hyperparameters  
   parser.add_argument("-at", "--aux-trainable", help="Auxiliary information trainable", action="store_true")
   parser.add_argument("-y", "--model-type", help="Which type of model to use", required=True, choices=['CNN', 'CNNAux', 'LSTM', 'LSTMAux'])
@@ -153,7 +166,6 @@ def parse_arguments():
   globals.XML_FILE = arguments.data_file
   globals.POS_XML_FILE = arguments.pos_data_file
   globals.WITH_AUX_INFO = arguments.get_aux_info
-  
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
   try:
     w2v_size = int(arguments.word2vec_size)
@@ -173,7 +185,10 @@ def parse_arguments():
   globals.REMOVE_STOP_WORDS = arguments.remove_stop_words
   globals.SHOULD_STEM = arguments.stem_words
   globals.TRAIN_SET_PERCENTAGE = arguments.train_percentage
-  
+  globals.SPLIT_WITH_DATE = arguments.split_by_date
+  if globals.SPLIT_WITH_DATE:
+    globals.TRAIN_SET_PERCENTAGE = 0.0
+    
   globals.EMBEDDING_DIM = arguments.embedding_dim # default 128, pretrained => 200 # not currently set
   globals.EMBEDDING_TRAINABLE = arguments.embedding_trainable
   globals.BATCH_SIZE = arguments.batch_size

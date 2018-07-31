@@ -117,6 +117,14 @@ def get_abstract_text_with_targets(elem, output_list):
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
   
+  if globals.SPLIT_WITH_DATE:
+    dcom = medline_cit_tag.find(".//DateCompleted")
+    dcom_year = etree.tostring(dcom.find("Year"), method="text", with_tail=False, encoding='unicode')
+    dcom_month = etree.tostring(dcom.find("Month"), method="text", with_tail=False, encoding='unicode')
+    dcom_day = etree.tostring(dcom.find("Day"), method="text", with_tail=False, encoding='unicode')
+    dcom_date = datetime.date(int(dcom_year), int(dcom_month), int(dcom_day))
+  
+  
   if(output_text is not None):
     cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
@@ -125,7 +133,9 @@ def get_abstract_text_with_targets(elem, output_list):
     cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
   
   cit_dict["target"] = medline_cit_tag.get("Status")
-
+  if globals.SPLIT_WITH_DATE:
+    cit_dict['dcom'] = dcom_date
+  
   output_list.append(cit_dict)
     
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
@@ -141,12 +151,14 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   authors = elem.find(".//AuthorList")
   keywords = elem.find(".//KeywordList")
   
-  dcom = medline_cit_tag.find(".//DateCompleted")
-  dcom_year = etree.tostring(dcom.find("Year"), method="text", with_tail=False, encoding='unicode')
-  dcom_month = etree.tostring(dcom.find("Month"), method="text", with_tail=False, encoding='unicode')
-  dcom_day = etree.tostring(dcom.find("Day"), method="text", with_tail=False, encoding='unicode')
-  dcom_date = datetime.date(int(dcom_year), int(dcom_month), int(dcom_day))
-  
+  if globals.SPLIT_WITH_DATE:
+
+    dcom = medline_cit_tag.find(".//DateCompleted")
+    dcom_year = etree.tostring(dcom.find("Year"), method="text", with_tail=False, encoding='unicode')
+    dcom_month = etree.tostring(dcom.find("Month"), method="text", with_tail=False, encoding='unicode')
+    dcom_day = etree.tostring(dcom.find("Day"), method="text", with_tail=False, encoding='unicode')
+    dcom_date = datetime.date(int(dcom_year), int(dcom_month), int(dcom_day))
+    
   if(output_text is not None):
     cit_dict["text"] = etree.tostring(output_text, method="text", with_tail=False, encoding='unicode')
   else:
@@ -179,7 +191,8 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
 
   cit_dict["affiliations"] = [etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations]
   cit_dict["keywords"] = [etree.tostring(word, method="text", with_tail=False, encoding='unicode') for word in words]
-  cit_dict['dcom'] = dcom_date
+  if globals.SPLIT_WITH_DATE:
+    cit_dict['dcom'] = dcom_date
   
   # print("cit_dict: ", cit_dict['affiliations'])
   # print('citation: ', cit_dict)
@@ -425,18 +438,20 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     elif doc['target'] == "PubMed-not-MEDLINE":
       labels.append([0])
   
-    # Keep track of train or test, by date
-    # if doc['dcom'] > test_date:
-      # train_test_tracker.append(1)
-    # else:
-      # train_test_tracker.append(0)
+    if globals.SPLIT_WITH_DATE:
+      # Keep track of train or test, by date
+      test_date
+      if doc['dcom'] > test_date:
+        train_test_tracker.append(1)
+      else:
+        train_test_tracker.append(0)
   
-  # print("train_test_tracker test", train_test_tracker)
+  print("train_test_tracker test", train_test_tracker)
   # print("affiliation test: ", idx_hold)
   # we are adding start and end tags
-  # for doc in abs_text_word_ids:
-    # doc.insert(0, 1)
-    # doc.append(2)
+  for doc in abs_text_word_ids:
+    doc.insert(0, 1)
+    doc.append(2)
     
   # We have to do this here, because we just added two elements to each list, max increased by two
   max_doc_length += 2
@@ -472,8 +487,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 affiliation_ids,
                                                 keyword_ids,
                                                 labels,
-                                                
-                                                date=test_date, 
+                                                train_list=train_test_tracker,
                                                 shuffle=True)
     
   # these are the generators used to create the datasets
@@ -620,8 +634,12 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
   
-def train_test_split_with_date(*arrays, date, shuffle=True):
-  pass
+def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
+  output_arrays = []
+  for array in arrays:
+    
+    train_set.append()
+    test_set.append()
   
 # ------------------------- W2V Gensim Loading Method  ------------------------- 
 
