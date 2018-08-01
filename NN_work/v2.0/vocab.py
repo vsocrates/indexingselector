@@ -22,6 +22,7 @@ from tensorflow.python.platform import gfile
 import globals
 
 UNK = "<UNK>"
+PAD = "<PAD>"
 START = "<START>"
 EOS = "<EOS>"
 
@@ -30,10 +31,11 @@ class VocabProcessor:
   def __init__(self, tokenizer_fn, batch_size, remove_stop_words, should_stem, limit_vocab=True, max_vocab_size=80000):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
-    self.vocab[UNK] = 0
-    self.vocab[START] = 1
-    self.vocab[EOS] = 2
-    self.next = 2  # After 2 comes 3
+    self.vocab[PAD] = globals.PAD_ID
+    self.vocab[UNK] = globals.UNK_ID
+    self.vocab[START] = globals.START_ID
+    self.vocab[EOS] = globals.END_ID
+    self.next = globals.END_ID  # After 3 comes 4
     self.tokenizer = tokenizer_fn
     self.reverse_vocab = {}
 
@@ -57,10 +59,11 @@ class VocabProcessor:
   def reset_processor(self):
     self.vocab = defaultdict(self.next_value)  # map tokens to ids. Automatically gets next id when needed
     self.token_counter = Counter()  # Counts the token frequency
-    self.vocab[UNK] = 0
-    self.vocab[START] = 1
-    self.vocab[EOS] = 2
-    self.next = 2  # After 2 comes 3
+    self.vocab[PAD] = globals.PAD_ID
+    self.vocab[UNK] = globals.UNK_ID
+    self.vocab[START] = globals.START_ID
+    self.vocab[EOS] = globals.END_ID
+    self.next = globals.END_ID  # After 3 comes 4
     self.reverse_vocab = {}
     
   def reset_test_generator(self):

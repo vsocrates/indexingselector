@@ -45,4 +45,13 @@ LOG_DEVICE_PLACEMENT=False
 # Non-user-specified globals for use internally
 global NUM_POS
 global NUM_NEG
-     
+
+global PAD_ID
+PAD_ID = 0
+global UNK_ID
+UNK_ID = 1
+global START_ID
+START_ID = 2
+global END_ID
+END_ID = 3
+

@@ -5,6 +5,7 @@ import math
 import collections 
 import re 
 import string 
+import itertools 
 
 from profilehooks import profile
 import gensim 
@@ -445,13 +446,17 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
         train_test_tracker.append(1)
       else:
         train_test_tracker.append(0)
-  
-  print("train_test_tracker test", train_test_tracker)
+  print("train_test_tracker: ", train_test_tracker)
+  if globals.SPLIT_WITH_DATE:
+    test_num = sum(train_test_tracker)
+    val = 1.0 - round(test_num/len(doc_data_list), 2)
+    globals.TRAIN_SET_PERCENTAGE = val
+    print("val: ", val)
   # print("affiliation test: ", idx_hold)
   # we are adding start and end tags
   for doc in abs_text_word_ids:
-    doc.insert(0, 1)
-    doc.append(2)
+    doc.insert(0, globals.START_ID)
+    doc.append(globals.END_ID)
     
   # We have to do this here, because we just added two elements to each list, max increased by two
   max_doc_length += 2
@@ -474,22 +479,36 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 affiliation_ids,
                                                 keyword_ids,
                                                 labels,
-                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=True)
+                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=False)
+    print("abs_text_train: ", jrnl_title_train)
   else:
-    abs_text_train, abs_text_test, \
-    jrnl_title_train, jrnl_title_test, \
-    art_title_train, art_title_test, \
-    affl_train, affl_test, \
-    keyword_train, keyword_test, \
-    labels_train, labels_test = train_test_split_with_date(abs_text_word_ids,
+    abs_text_train, jrnl_title_train, \
+    art_title_train, affl_train, \
+    keyword_train, labels_train, \
+    abs_text_test, jrnl_title_test, \
+    art_title_test, affl_test, \
+    keyword_test, labels_test = train_test_split_with_date(abs_text_word_ids,
                                                 jrnl_title_ids,
                                                 art_title_ids,
                                                 affiliation_ids,
                                                 keyword_ids,
                                                 labels,
                                                 train_list=train_test_tracker,
-                                                shuffle=True)
-    
+                                                shuffle=False)
+    abs_text_train = list(abs_text_train)                                            
+    abs_text_test = list(abs_text_test)                                            
+    jrnl_title_train = list(jrnl_title_train)                                            
+    jrnl_title_test = list(jrnl_title_test)                                            
+    art_title_train = list(art_title_train)                                            
+    art_title_test = list(art_title_test)                                            
+    affl_train = list(affl_train)                                            
+    affl_test = list(affl_test)                                            
+    keyword_train = list(keyword_train)                                            
+    keyword_test = list(keyword_test)                                            
+    labels_train = list(labels_train)                                            
+    labels_test = list(labels_test)                                            
+
+    print("abs_text_train: ", jrnl_title_train)
   # these are the generators used to create the datasets
   # we can't make just one method yet since the generators need to be callables with no params right now. 
   # This is an open issue on stackoverflow: https://github.com/tensorflow/tensorflow/issues/13101
@@ -635,18 +654,43 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
   return return_datasets, all_max_lengths
   
 def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
-  output_arrays = []
-  for array in arrays:
-    
-    train_set.append()
-    test_set.append()
+  train_set = []
+  test_set = []
+  product = itertools.product(*arrays)
+  for elem in zip(*arrays, train_list):
+    if elem[len(elem) - 1] == 0:
+      train_set.append(elem[:len(elem) - 1])
+    elif elem[len(elem) - 1] == 1:
+      test_set.append(elem[:len(elem) - 1])
+    else:
+      print("In split by date: Should not happen")
+
+  if shuffle:
+    np.random.shuffle(train_set)
+    np.random.shuffle(test_set)
+  # print("train_set: ", train_set[10])
+  # print("test_set: ", test_set[10])
+  # a,b,c,d,e,f,g,h,i,j,k,l = itertools.chain(zip(*train_set), zip(*test_set))
+  # print("train_set2: ", a[10])
+  # print("train_set2: ", b[10])
+  # print("train_set2: ", c[10])
+  # print("train_set2: ", d[10])
+  # print("train_set2: ", e[10])
+  # print("train_set2: ", f[10])
+  # print("train_set2: ", g[10])
+  # print("train_set2: ", h[10])
+  # print("train_set2: ", i[10])
+  # print("train_set2: ", j[10])
+  # print("train_set2: ", k[10])
+  # print("train_set2: ", l[10])
   
+  return itertools.chain(zip(*train_set), zip(*test_set))
+      
 # ------------------------- W2V Gensim Loading Method  ------------------------- 
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)            
 def get_word_to_vec_model(model_path, matrix_size, vocab_proc, vocab_proc_tag):
   vocab = vocab_proc[vocab_proc_tag].vocab
-  
   if model_path.find(".bin") > 0:
     model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
   elif model_path.find(".txt") > 0:
@@ -662,8 +706,6 @@ def get_word_to_vec_model(model_path, matrix_size, vocab_proc, vocab_proc_tag):
   globals.EMBEDDING_DIM = model.vector_size
   
   embedding_matrix = np.zeros((len(vocab), model.vector_size))
-  # for i in range(len(model.wv.vocab)):
-  max_size = min(len(model.index2word), len(vocab))
 
   for word, idx in vocab.items():
     if word in model.wv:

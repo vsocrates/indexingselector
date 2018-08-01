@@ -85,11 +85,11 @@ def train_CNN(datasets,
               *inputs, labels = sess.run(next_val)
               yield inputs, labels  
             except tf.errors.OutOfRangeError:
-              if DEBUG:
+              if globals.DEBUG:
                 print("OutOfRangeError Exception Thrown")          
               break
             except Exception as e: 
-              if DEBUG:
+              if globals.DEBUG:
                 print(e)
                 print("Unknown Exception Thrown")
               break
