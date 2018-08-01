@@ -195,8 +195,6 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   if globals.SPLIT_WITH_DATE:
     cit_dict['dcom'] = dcom_date
   
-  # print("cit_dict: ", cit_dict['affiliations'])
-  # print('citation: ', cit_dict)
   output_list.append(cit_dict)
 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
@@ -258,7 +256,6 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
     datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list, test_date, train_size)
         
   print("Vocabulary Size: ", len(vocab_proc_dict['text'].vocab))
-  # print("vocab", vocab_proc_dict['text'].token_counter)
     
   return datasets, vocab_proc_dict, max_doc_length, len(text_list)
 
@@ -402,8 +399,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     jrnl_title_ids.append(word_id_list)
 
     tokens = art_title_vocab_proc.tokenize(str(doc['article_title']))
-    # print("article before tokens: ", str(doc['article_title']))
-    # print("article title tokesN: ", tokens)
     word_id_list = art_title_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_art_title_length:
       max_art_title_length = len(word_id_list)
@@ -416,11 +411,9 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     for section in words_by_punc:
       if any(word in section.lower() for word in AFFL_DEPT_LIST):
         affl_clean = section
-        break
-    
-    # tokens = affil_vocab_proc.tokenize(str(doc['affiliations']))
+        break    
     tokens = affil_vocab_proc.tokenize(section)
-    # print("affiliations tokesN: ", section)
+    
     word_id_list = affil_vocab_proc.tokens_to_id_list(list(set(tokens)))
     if len(word_id_list) > max_affl_length:
       max_affl_length = len(word_id_list)
@@ -446,13 +439,11 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
         train_test_tracker.append(1)
       else:
         train_test_tracker.append(0)
-  print("train_test_tracker: ", train_test_tracker)
+
   if globals.SPLIT_WITH_DATE:
     test_num = sum(train_test_tracker)
     val = 1.0 - round(test_num/len(doc_data_list), 2)
     globals.TRAIN_SET_PERCENTAGE = val
-    print("val: ", val)
-  # print("affiliation test: ", idx_hold)
   # we are adding start and end tags
   for doc in abs_text_word_ids:
     doc.insert(0, globals.START_ID)
@@ -460,7 +451,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     
   # We have to do this here, because we just added two elements to each list, max increased by two
   max_doc_length += 2
-  
   
   # now we'll split train/test set
   # TODO: will eventually have to replace this with cross-validation
@@ -480,7 +470,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 keyword_ids,
                                                 labels,
                                                 test_size=round(1.0-train_size, 2), random_state=42, shuffle=False)
-    print("abs_text_train: ", jrnl_title_train)
   else:
     abs_text_train, jrnl_title_train, \
     art_title_train, affl_train, \
@@ -508,7 +497,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     labels_train = list(labels_train)                                            
     labels_test = list(labels_test)                                            
 
-    print("abs_text_train: ", jrnl_title_train)
   # these are the generators used to create the datasets
   # we can't make just one method yet since the generators need to be callables with no params right now. 
   # This is an open issue on stackoverflow: https://github.com/tensorflow/tensorflow/issues/13101
@@ -668,21 +656,6 @@ def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
   if shuffle:
     np.random.shuffle(train_set)
     np.random.shuffle(test_set)
-  # print("train_set: ", train_set[10])
-  # print("test_set: ", test_set[10])
-  # a,b,c,d,e,f,g,h,i,j,k,l = itertools.chain(zip(*train_set), zip(*test_set))
-  # print("train_set2: ", a[10])
-  # print("train_set2: ", b[10])
-  # print("train_set2: ", c[10])
-  # print("train_set2: ", d[10])
-  # print("train_set2: ", e[10])
-  # print("train_set2: ", f[10])
-  # print("train_set2: ", g[10])
-  # print("train_set2: ", h[10])
-  # print("train_set2: ", i[10])
-  # print("train_set2: ", j[10])
-  # print("train_set2: ", k[10])
-  # print("train_set2: ", l[10])
   
   return itertools.chain(zip(*train_set), zip(*test_set))
       

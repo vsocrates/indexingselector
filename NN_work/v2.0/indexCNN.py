@@ -126,7 +126,7 @@ def train_CNN(datasets,
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
     
-    act = PReLU(init='zero', weights=None)
+    act = PReLU(alpha_initializer='zero', weights=None)
     softmax = Lambda(lambda x: backend.tf.nn.softmax(x))
     
     dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1])(conv_blocks_concat)
