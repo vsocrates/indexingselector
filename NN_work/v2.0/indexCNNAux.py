@@ -115,10 +115,10 @@ def train_CNNAux(datasets,
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
 
     itr_train = make_multiple_iterator(
-    [datasets.abs_text_train_dataset, datasets.affl_train_dataset, datasets.keyword_train_dataset, datasets.art_title_train_dataset],
+    [datasets.abs_text_train_dataset, datasets.affl_train_dataset, datasets.art_title_train_dataset],
     train_batch_num)
     itr_validate = make_multiple_iterator(
-    [datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.keyword_train_dataset, datasets.art_title_test_dataset],
+    [datasets.abs_text_test_dataset,datasets.affl_test_dataset, datasets.art_title_test_dataset],
     val_batch_num)
     
     main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
@@ -162,17 +162,17 @@ def train_CNNAux(datasets,
     affl_embedding_layer = Flatten()(affl_embedding_layer)
     auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="affldropout")(affl_embedding_layer)
 
-    # auxiliary information 2: keywords
-    aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
-    keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
-                                output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['keywords']],                                
-                                trainable=globals.AUX_TRAINABLE,
-                                input_length=max_doc_lengths.keyword_max_length,
-                                name="keyword_embedding")(aux_input2)
+    # # auxiliary information 2: keywords
+    # aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
+    # keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
+                                # output_dim=globals.EMBEDDING_DIM,
+                                # weights=[w2vmodel['keywords']],                                
+                                # trainable=globals.AUX_TRAINABLE,
+                                # input_length=max_doc_lengths.keyword_max_length,
+                                # name="keyword_embedding")(aux_input2)
 
-    keyword_embedding_layer = Flatten()(keyword_embedding_layer)
-    auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
+    # keyword_embedding_layer = Flatten()(keyword_embedding_layer)
+    # auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
 
     # auxiliary information 3: article titles
     aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
@@ -207,7 +207,10 @@ def train_CNNAux(datasets,
     
     
     # Merge layers and into dense for final output
-    concat = Concatenate()([dropout2, auxdropout1, auxdropout2, auxdropout3])
+    concat = Concatenate()([dropout2,
+                            auxdropout1,
+                            # auxdropout2,
+                            auxdropout3])
     
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
@@ -217,8 +220,8 @@ def train_CNNAux(datasets,
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=0.01)
 
-    model = Model(inputs=[main_input, aux_input1
-      , aux_input2,
+    model = Model(inputs=[main_input, aux_input1,
+      # aux_input2,
       aux_input3
       ], outputs=[model_output])
     

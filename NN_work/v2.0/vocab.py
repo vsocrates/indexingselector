@@ -47,6 +47,11 @@ class VocabProcessor:
     
     if remove_stop_words:
       remove_words = stopwords.words("english") + list(punctuation)
+      # not included in punctuation for some reason
+      remove_words.append("+")
+      remove_words.append("``")
+      remove_words.append("''")
+      remove_words.append("'s")
       self.remove_word_set = set(remove_words)
       # adding punctuation from the same flag
     if self.should_stem:
