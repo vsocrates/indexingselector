@@ -442,8 +442,9 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
 
   if globals.SPLIT_WITH_DATE:
     test_num = sum(train_test_tracker)
-    val = 1.0 - round(test_num/len(doc_data_list), 2)
+    val = round(1.0 - round(test_num/len(doc_data_list), 2), 2)
     globals.TRAIN_SET_PERCENTAGE = val
+    print("VAL: ",val)
   # we are adding start and end tags
   for doc in abs_text_word_ids:
     doc.insert(0, globals.START_ID)
@@ -469,7 +470,10 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 affiliation_ids,
                                                 keyword_ids,
                                                 labels,
-                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=False)
+                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=True)
+    print("how much in train: ", len(abs_text_train))
+    print("how much in test: ", len(abs_text_test))
+                                            
   else:
     abs_text_train, jrnl_title_train, \
     art_title_train, affl_train, \
@@ -483,7 +487,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 keyword_ids,
                                                 labels,
                                                 train_list=train_test_tracker,
-                                                shuffle=False)
+                                                shuffle=True)
     abs_text_train = list(abs_text_train)                                            
     abs_text_test = list(abs_text_test)                                            
     jrnl_title_train = list(jrnl_title_train)                                            
@@ -656,7 +660,11 @@ def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
   if shuffle:
     np.random.shuffle(train_set)
     np.random.shuffle(test_set)
-  
+  print("how much in train: ", len(train_set))
+  print("how much in test: ", len(test_set))
+  if (len(train_set) <= 0 or len(test_set) <=0):
+    raise ValueError('The train or test set is too small, pick an older date or lower train percentage')
+
   return itertools.chain(zip(*train_set), zip(*test_set))
       
 # ------------------------- W2V Gensim Loading Method  ------------------------- 

@@ -95,9 +95,6 @@ def train_CNNAux(datasets,
                 *inputs, labels = sess.run(vals)
                 # this is the only thing in the list, idk why its in there. 
                 value_list.append(inputs[0])
-                # label_temp = labels
-                # labels_out.append(labels)
-                # yield inputs, labels  
               except tf.errors.OutOfRangeError:
                 if globals.DEBUG:
                   print("OutOfRangeError Exception Thrown")          
@@ -112,30 +109,30 @@ def train_CNNAux(datasets,
             yield value_list, labels_out
 
     train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
+    print("train_batch_num" , train_batch_num)
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
+    print("val_batch_num: ", val_batch_num)
 
     itr_train = make_multiple_iterator(
     [
-     # datasets.abs_text_train_dataset,
-     # datasets.affl_train_dataset,
-     # datasets.keyword_train_dataset,
-     datasets.art_title_train_dataset],
+    datasets.abs_text_train_dataset,
+    datasets.affl_train_dataset,
+    # datasets.keyword_train_dataset,
+    datasets.art_title_train_dataset],
     train_batch_num)
-
     itr_validate = make_multiple_iterator(
     [
-     # datasets.abs_text_test_dataset,
-     # datasets.affl_test_dataset,
-     # datasets.keyword_test_dataset,
-     datasets.art_title_test_dataset],
+    datasets.abs_text_test_dataset,
+    datasets.affl_test_dataset,
+    # datasets.keyword_train_dataset,
+    datasets.art_title_test_dataset],
     val_batch_num)
     
-    main_input = Input(shape=(max_doc_lengths.art_title_max_length,#abs_text_max_length,
-    ), dtype="int32", name="main_input")#, tensor=input_x)
-    embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
+    main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
+    embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['article_title']],
-                                input_length=max_doc_lengths.art_title_max_length, #abs_text_max_length,
+                                weights=[w2vmodel['text']],
+                                input_length=max_doc_lengths.abs_text_max_length,
                                 trainable=globals.EMBEDDING_TRAINABLE,
                                 name="embedding")(main_input)
 
@@ -161,18 +158,18 @@ def train_CNNAux(datasets,
     auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
 
     # auxiliary information 1: affiliations
-    # aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
-    # affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
-                                # output_dim=globals.EMBEDDING_DIM,
-                                # weights=[w2vmodel['affiliations']],                                
-                                # trainable=globals.AUX_TRAINABLE,
-                                # input_length=max_doc_lengths.affl_max_length,
-                                # name="affl_embedding")(aux_input1)
+    aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
+    affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
+                                output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel['affiliations']],                                
+                                trainable=globals.AUX_TRAINABLE,
+                                input_length=max_doc_lengths.affl_max_length,
+                                name="affl_embedding")(aux_input1)
 
-    # affl_embedding_layer = Flatten()(affl_embedding_layer)
-    # auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="affldropout")(affl_embedding_layer)
+    affl_embedding_layer = Flatten()(affl_embedding_layer)
+    auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="affldropout")(affl_embedding_layer)
 
-    # # auxiliary information 2: keywords
+    # auxiliary information 2: keywords
     # aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
     # keyword_embedding_layer = Embedding(input_dim=len(vocab_processors['keywords'].vocab),
                                 # output_dim=globals.EMBEDDING_DIM,
@@ -185,16 +182,16 @@ def train_CNNAux(datasets,
     # auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
 
     # auxiliary information 3: article titles
-    # aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
-    # art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
-                                # output_dim=globals.EMBEDDING_DIM,
-                                # weights=[w2vmodel['article_title']],                                
-                                # trainable=globals.AUX_TRAINABLE,
-                                # input_length=max_doc_lengths.art_title_max_length,
-                                # name="art_title_embedding")(aux_input3)
+    aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
+    art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
+                                output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel['article_title']],                                
+                                trainable=globals.AUX_TRAINABLE,
+                                input_length=max_doc_lengths.art_title_max_length,
+                                name="art_title_embedding")(aux_input3)
 
-    # art_title_embedding_layer = Flatten()(art_title_embedding_layer)
-    # auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
+    art_title_embedding_layer = Flatten()(art_title_embedding_layer)
+    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
     
     
     # # Auxiliary Convolutional block
@@ -217,13 +214,12 @@ def train_CNNAux(datasets,
     
     
     # Merge layers and into dense for final output
-    # concat = Concatenate()([dropout2,
-                            # auxdropout1,
+    concat = Concatenate()([dropout2,
+                            auxdropout1, 
                             # auxdropout2,
-                            # auxdropout3
-                            # ])
+                            auxdropout3])
     
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dropout2)#concat)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
@@ -231,10 +227,10 @@ def train_CNNAux(datasets,
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=0.01)
 
-    model = Model(inputs=[main_input, 
-      # aux_input1,
+    model = Model(inputs=[main_input,
+      aux_input1,
       # aux_input2,
-      # aux_input3
+      aux_input3
       ], outputs=[model_output])
     
     # truepos_metricfn = BinaryTruePositives()
