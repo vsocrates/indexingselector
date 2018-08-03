@@ -130,3 +130,5 @@ PubMed-and-PMC-w2v-50dim.txt
 
 # ignore data folder
 data/
+
+*_word_freqs.txt

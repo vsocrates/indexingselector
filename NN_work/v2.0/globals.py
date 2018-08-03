@@ -55,3 +55,4 @@ START_ID = 2
 global END_ID
 END_ID = 3
 
+global WORD_FREQ
