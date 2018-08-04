@@ -51,7 +51,8 @@ def get_text_and_metadata(elem, output_list):
   
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
-  
+  journal_title_tag = elem.find(".//Title")
+
   if globals.SPLIT_WITH_DATE:
     dcom = medline_cit_tag.find(".//DateCompleted")
     dcom_year = etree.tostring(dcom.find("Year"), method="text", with_tail=False, encoding='unicode')
@@ -67,6 +68,7 @@ def get_text_and_metadata(elem, output_list):
     empty_abstract.text = ""    
     cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
   
+  cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
   cit_dict["target"] = medline_cit_tag.get("Status")
   if globals.SPLIT_WITH_DATE:
     cit_dict['dcom'] = dcom_date
@@ -76,7 +78,8 @@ def get_text_and_metadata(elem, output_list):
   
 def read_corpus(documents):
     for i, plot in enumerate(documents):
-        yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot, max_len=30), [i])
+        # yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot['text'], max_len=30), [plot['target'],plot['journal_title']])
+        yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot['text'], max_len=30), [i])
   
   
 def main():
@@ -111,7 +114,8 @@ def main():
   
   text_only = [str(text['text']) for text in text_list]
 
-  train_corpus = list(read_corpus(text_only))
+  # train_corpus = list(read_corpus(text_only))
+  train_corpus = list(read_corpus(text_list))
 
   # for idx, doc in enumerate(text_list):
   print(train_corpus[:2])
@@ -122,9 +126,10 @@ def main():
   
   output_file = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_doc2vec_50dim.w2v"
   
-  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=False)
+  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=True)
 
-
-  
+  # with open("chemistry_metadata.tsv",'w') as w:
+    
+    
 if __name__ == '__main__':
   main()
