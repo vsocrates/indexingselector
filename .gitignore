@@ -132,3 +132,5 @@ PubMed-and-PMC-w2v-50dim.txt
 data/
 
 *_word_freqs.txt
+*_pmi.txt
+*.w2v

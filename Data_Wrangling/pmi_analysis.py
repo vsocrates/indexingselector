@@ -197,17 +197,26 @@ def main():
         neg_pmi_vals[key] = math.log( (value[2] * NUM_TOTAL)/(value[0] * NUM_NEG) ) / (-1 * math.log(value[2] / NUM_TOTAL) )
     
     counter = 0
-    for key, value in sorted(pos_pmi_vals.items(), key = itemgetter(1), reverse = True):
-      print("%s: %s" % (key, value))
-      counter += 1
-      if counter > 50:
-        break
+    pos_pmi_fname = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_pos_pmi.txt"
+    neg_pmi_fname = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_neg_pmi.txt"
+    with open(pos_pmi_fname, "wb") as out:
+      for key, value in sorted(pos_pmi_vals.items(), key = itemgetter(1), reverse = True):
+        out_string = key + " " + str(value) + "\n"
+        out.write(out_string.encode("utf8"))
+        counter += 1
+        if counter < 50:
+          print("%s: %s" % (key, value))
+          
     counter = 0
     print("\n")
-    for key, value in sorted(neg_pmi_vals.items(), key = itemgetter(1), reverse = True):
-      print("%s: %s" % (key, value))
-      counter += 1
-      if counter > 50:
-        break
+
+    with open(neg_pmi_fname, "wb") as out:
+      for key, value in sorted(neg_pmi_vals.items(), key = itemgetter(1), reverse = True):
+        out_string = key + " " + str(value) + "\n"
+        out.write(out_string.encode("utf8"))
+        counter += 1
+        if counter < 50:
+          print("%s: %s" % (key, value))
+          
 if __name__ == '__main__':
   main()

@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import lxml.etree as etree
 import re
@@ -115,11 +116,13 @@ def main():
   # for idx, doc in enumerate(text_list):
   print(train_corpus[:2])
 
-  model = gensim.models.doc2vec.Doc2Vec(vector_size=50, min_count=2, epochs=55)
+  model = gensim.models.doc2vec.Doc2Vec(vector_size=50, min_count=2, epochs=110)
   model.build_vocab(train_corpus)
   model.train(train_corpus, total_examples=model.corpus_count, epochs=model.epochs)
   
-  model.save_word2vec_format('doc_tensor.w2v', doctag_vec=True, word_vec=False)
+  output_file = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_doc2vec_50dim.w2v"
+  
+  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=False)
 
 
   

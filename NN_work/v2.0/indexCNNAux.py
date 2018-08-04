@@ -75,24 +75,7 @@ def train_CNNAux(datasets,
   sess.run(init_op)
   
   with sess.as_default():
-    def make_iterator(dataset, batch_num):
-      while True:
-        iterator = dataset.make_one_shot_iterator()
-        next_val = iterator.get_next()
-        for i in range(batch_num):
-          try:
-            *inputs, labels = sess.run(next_val)
-            yield inputs, labels  
-          except tf.errors.OutOfRangeError:
-            if globals.DEBUG:
-              print("OutOfRangeError Exception Thrown")          
-            break
-          except Exception as e: 
-            if globals.DEBUG:
-              print(e)
-              print("Unknown Exception Thrown")
-            break
-
+  
     def make_multiple_iterator(dataset_list, batch_num):
         while True:
           itr_list = []
@@ -130,36 +113,32 @@ def train_CNNAux(datasets,
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     print("val_batch_num: ", val_batch_num)
 
-    # itr_train = make_multiple_iterator(
-    # [
-    # # datasets.abs_text_train_dataset,
-    # # datasets.affl_train_dataset,
-    # # datasets.keyword_train_dataset,
-    # datasets.art_title_train_dataset],
-    # train_batch_num)
-    # itr_validate = make_multiple_iterator(
-    # [
-    # # datasets.abs_text_test_dataset,
-    # # datasets.affl_test_dataset,
-    # # datasets.keyword_train_dataset,
-    # datasets.art_title_test_dataset],
-    # val_batch_num)
+    itr_train = make_multiple_iterator(
+    [
+    datasets.abs_text_train_dataset,
+    # datasets.affl_train_dataset,
+    # datasets.keyword_train_dataset,
+    datasets.art_title_train_dataset],
+    train_batch_num)
+    itr_validate = make_multiple_iterator(
+    [
+    datasets.abs_text_test_dataset,
+    # datasets.affl_test_dataset,
+    # datasets.keyword_train_dataset,
+    datasets.art_title_test_dataset],
+    val_batch_num)
     
-    itr_train = make_iterator(datasets.art_title_train_dataset, train_batch_num)
-    itr_validate = make_iterator(datasets.art_title_test_dataset, val_batch_num)
-
-    
-    main_input = Input(shape=(max_doc_lengths.art_title_max_length,)#abs_text_max_length,)
-    , dtype="int32", name="main_input")#, tensor=input_x)
-    embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),#vocab_processors['text'].vocab),
+    main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
+    embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
                                 output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['article_title']],#w2vmodel['text']],
-                                input_length=max_doc_lengths.art_title_max_length,# abs_text_max_length,
+                                weights=[w2vmodel['text']],
+                                input_length=max_doc_lengths.abs_text_max_length,
                                 trainable=globals.EMBEDDING_TRAINABLE,
                                 name="embedding")(main_input)
 
     dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
-
+    before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
+    
     # Convolutional block
     conv_blocks = []
     for sz in globals.FILTER_SIZES:
@@ -169,7 +148,7 @@ def train_CNNAux(datasets,
                            padding="valid",
                            activation="relu",
                            strides=1,
-                           name=conv_name)(dropout1)
+                           name=conv_name)(before_conv_dense)
       # conv = GlobalMaxPooling1D()(conv)
       conv = MaxPooling1D(pool_size=2)(conv)
       conv = Flatten()(conv)
@@ -204,16 +183,16 @@ def train_CNNAux(datasets,
     # auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
 
     # auxiliary information 3: article titles
-    # aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
-    # art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
-                                # output_dim=globals.EMBEDDING_DIM,
-                                # weights=[w2vmodel['article_title']],                                
-                                # trainable=globals.AUX_TRAINABLE,
-                                # input_length=max_doc_lengths.art_title_max_length,
-                                # name="art_title_embedding")(aux_input3)
+    aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
+    art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
+                                output_dim=globals.EMBEDDING_DIM,
+                                weights=[w2vmodel['article_title']],                                
+                                trainable=globals.AUX_TRAINABLE,
+                                input_length=max_doc_lengths.art_title_max_length,
+                                name="art_title_embedding")(aux_input3)
 
-    # art_title_embedding_layer = Flatten()(art_title_embedding_layer)
-    # auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
+    art_title_embedding_layer = Flatten()(art_title_embedding_layer)
+    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
     
     
     # # Auxiliary Convolutional block
@@ -236,12 +215,12 @@ def train_CNNAux(datasets,
     
     
     # Merge layers and into dense for final output
-    # concat = Concatenate()([dropout2,
+    concat = Concatenate()([dropout2,
                             # auxdropout1, 
-                            # # auxdropout2,
-                            # auxdropout3])
+                            # auxdropout2,
+                            auxdropout3])
     
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dropout2)#(concat)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
@@ -251,8 +230,8 @@ def train_CNNAux(datasets,
 
     model = Model(inputs=[main_input,
       # aux_input1,
-      # # aux_input2,
-      # aux_input3
+      # aux_input2,
+      aux_input3
       ], outputs=[model_output])
     
     # truepos_metricfn = BinaryTruePositives()
