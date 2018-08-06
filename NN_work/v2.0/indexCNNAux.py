@@ -128,16 +128,17 @@ def train_CNNAux(datasets,
     datasets.art_title_test_dataset],
     val_batch_num)
     
-    main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
-    embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
-                                output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['text']],
-                                input_length=max_doc_lengths.abs_text_max_length,
-                                trainable=globals.EMBEDDING_TRAINABLE,
-                                name="embedding")(main_input)
+    with tf.device('/cpu:0'):    
+      main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
+      embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
+                                  output_dim=globals.EMBEDDING_DIM,
+                                  weights=[w2vmodel['text']],
+                                  input_length=max_doc_lengths.abs_text_max_length,
+                                  trainable=globals.EMBEDDING_TRAINABLE,
+                                  name="embedding")(main_input)
 
-    dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
-    before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
+      dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+      before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
     # Convolutional block
     conv_blocks = []
@@ -183,13 +184,14 @@ def train_CNNAux(datasets,
     # auxdropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="keydropout")(keyword_embedding_layer)
 
     # auxiliary information 3: article titles
-    aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
-    art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
-                                output_dim=globals.EMBEDDING_DIM,
-                                weights=[w2vmodel['article_title']],                                
-                                trainable=globals.AUX_TRAINABLE,
-                                input_length=max_doc_lengths.art_title_max_length,
-                                name="art_title_embedding")(aux_input3)
+    with tf.device('/cpu:0'):    
+      aux_input3 = Input(shape=(max_doc_lengths.art_title_max_length,), dtype="int32", name="art_title_input")
+      art_title_embedding_layer = Embedding(input_dim=len(vocab_processors['article_title'].vocab),
+                                  output_dim=globals.EMBEDDING_DIM,
+                                  weights=[w2vmodel['article_title']],                                
+                                  trainable=globals.AUX_TRAINABLE,
+                                  input_length=max_doc_lengths.art_title_max_length,
+                                  name="art_title_embedding")(aux_input3)
 
     art_title_embedding_layer = Flatten()(art_title_embedding_layer)
     auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
