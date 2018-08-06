@@ -189,12 +189,12 @@ def main():
       if value[1] <= 0:
         pos_pmi_vals[key] = float("-Inf")
       else:
-        pos_pmi_vals[key] = math.log( (value[1] * NUM_TOTAL)/(value[0] * NUM_POS) ) / (-1 * math.log(value[1] / NUM_TOTAL) )
+        pos_pmi_vals[key] = math.log( (value[1] * NUM_TOTAL)/(value[0] * NUM_POS), 2 ) / (-1 * math.log(value[1] / NUM_TOTAL, 2) )
       # neg next
       if value[2] <= 0:
         neg_pmi_vals[key] = float('-Inf')
       else:
-        neg_pmi_vals[key] = math.log( (value[2] * NUM_TOTAL)/(value[0] * NUM_NEG) ) / (-1 * math.log(value[2] / NUM_TOTAL) )
+        neg_pmi_vals[key] = math.log( (value[2] * NUM_TOTAL)/(value[0] * NUM_NEG), 2 ) / (-1 * math.log(value[2] / NUM_TOTAL, 2) )
     
     counter = 0
     pos_pmi_fname = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_pos_pmi.txt"
