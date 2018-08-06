@@ -15,6 +15,7 @@ from vocab import VocabProcessor
 import globals 
 
 import gensim
+from gensim.scripts import word2vec2tensor
 import pandas as pd
 #import smart_open
 import random
@@ -51,7 +52,7 @@ def get_text_and_metadata(elem, output_list):
   
   output_text = elem.find(".//AbstractText")
   medline_cit_tag = elem.find(".//MedlineCitation")
-  journal_title_tag = elem.find(".//Title")
+  article_title_tag = elem.find(".//ArticleTitle")
 
   if globals.SPLIT_WITH_DATE:
     dcom = medline_cit_tag.find(".//DateCompleted")
@@ -68,7 +69,7 @@ def get_text_and_metadata(elem, output_list):
     empty_abstract.text = ""    
     cit_dict['text'] = etree.tostring(empty_abstract, method="text", with_tail=False, encoding='unicode')
   
-  cit_dict["journal_title"] = etree.tostring(journal_title_tag, method="text", with_tail=False, encoding='unicode')
+  cit_dict["article_title"] = etree.tostring(article_title_tag, method="text", with_tail=False, encoding='unicode')
   cit_dict["target"] = medline_cit_tag.get("Status")
   if globals.SPLIT_WITH_DATE:
     cit_dict['dcom'] = dcom_date
@@ -120,16 +121,27 @@ def main():
   # for idx, doc in enumerate(text_list):
   print(train_corpus[:2])
 
-  model = gensim.models.doc2vec.Doc2Vec(vector_size=50, min_count=2, epochs=110)
+  model = gensim.models.doc2vec.Doc2Vec(vector_size=50, min_count=2, epochs=3)
   model.build_vocab(train_corpus)
   model.train(train_corpus, total_examples=model.corpus_count, epochs=model.epochs)
   
+  print("Training done!")
+  
   output_file = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_doc2vec_50dim.w2v"
   
-  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=True)
-
+  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=False)
+  print("Model saved!")
+  
+  word2vec2tensor.word2vec2tensor(output_file, "chemistry")
+  
+  with open("chemistry_metadata.tsv", "wb") as out:
+    out.write("Title\tIndexed\n".encode("utf8"))
+    for doc in text_list:
+      # print(doc['article_title'])
+      out_string = doc['article_title'] + "\t" + doc['target'] + "\n"
+      out.write(out_string.encode("utf8"))
   # with open("chemistry_metadata.tsv",'w') as w:
-    
+  
     
 if __name__ == '__main__':
   main()
