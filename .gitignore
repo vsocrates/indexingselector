@@ -134,3 +134,4 @@ data/
 *_word_freqs.txt
 *_pmi.txt
 *.w2v
+tboard_logs/

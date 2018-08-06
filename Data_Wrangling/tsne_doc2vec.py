@@ -78,9 +78,10 @@ def get_text_and_metadata(elem, output_list):
 
   
 def read_corpus(documents):
+    print("in read corpus: ", len(documents))
     for i, plot in enumerate(documents):
         # yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot['text'], max_len=30), [plot['target'],plot['journal_title']])
-        yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot['text'], max_len=30), [i])
+        yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(plot, max_len=30), [i])
   
   
 def main():
@@ -107,23 +108,23 @@ def main():
     journal_context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
     fast_iter(journal_context, get_text_and_metadata, text_list)
   
-  should_remove_stop_words = True
-  should_stem = False
+  # should_remove_stop_words = True
+  # should_stem = False
   
-  pos_vocab_proc = VocabProcessor(word_tokenize, 16, should_remove_stop_words, should_stem)
-  neg_vocab_proc = VocabProcessor(word_tokenize, 16, should_remove_stop_words, should_stem)
+  # pos_vocab_proc = VocabProcessor(word_tokenize, 16, should_remove_stop_words, should_stem)
+  # neg_vocab_proc = VocabProcessor(word_tokenize, 16, should_remove_stop_words, should_stem)
   
   text_only = [str(text['text']) for text in text_list]
 
-  # train_corpus = list(read_corpus(text_only))
-  train_corpus = list(read_corpus(text_list))
+  train_corpus = list(read_corpus(text_only))
+  # train_corpus = list(read_corpus(text_list))
 
   # for idx, doc in enumerate(text_list):
   print(train_corpus[:2])
 
-  model = gensim.models.doc2vec.Doc2Vec(vector_size=50, min_count=2, epochs=3)
+  model = gensim.models.doc2vec.Doc2Vec(size=50, min_count=2, iter=3)
   model.build_vocab(train_corpus)
-  model.train(train_corpus, total_examples=model.corpus_count, epochs=model.epochs)
+  model.train(train_corpus, total_examples=model.corpus_count, epochs=model.iter)
   
   print("Training done!")
   
