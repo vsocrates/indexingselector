@@ -610,20 +610,20 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
   
   # We are deciding to make them all the same length, as opposed to pad based on batch. 
   # TODO: look into if this is the right thing to do for CNN and LSTM   
-  abs_text_train_dataset = abs_text_train_dataset.padded_batch(text_vocab_proc.batch_size, padded_shapes=([max_doc_length], [1]))
-  abs_text_test_dataset = abs_text_test_dataset.padded_batch(text_vocab_proc.batch_size, padded_shapes=([max_doc_length],[1]))
+  abs_text_train_dataset = abs_text_train_dataset.padded_batch(text_vocab_proc.batch_size, padded_shapes=([max_doc_length], [1])).repeat()
+  abs_text_test_dataset = abs_text_test_dataset.padded_batch(text_vocab_proc.batch_size, padded_shapes=([max_doc_length],[1])).repeat()
 
-  jrnl_title_train_dataset = jrnl_title_train_dataset.padded_batch(jrnl_title_vocab_proc.batch_size, padded_shapes=([max_jrnl_title_length], [1]))
-  jrnl_title_test_dataset = jrnl_title_test_dataset.padded_batch(jrnl_title_vocab_proc.batch_size, padded_shapes=([max_jrnl_title_length],[1]))
+  jrnl_title_train_dataset = jrnl_title_train_dataset.padded_batch(jrnl_title_vocab_proc.batch_size, padded_shapes=([max_jrnl_title_length], [1])).repeat()
+  jrnl_title_test_dataset = jrnl_title_test_dataset.padded_batch(jrnl_title_vocab_proc.batch_size, padded_shapes=([max_jrnl_title_length],[1])).repeat()
 
-  art_title_train_dataset = art_title_train_dataset.padded_batch(art_title_vocab_proc.batch_size, padded_shapes=([max_art_title_length], [1]))
-  art_title_test_dataset = art_title_test_dataset.padded_batch(art_title_vocab_proc.batch_size, padded_shapes=([max_art_title_length],[1]))
+  art_title_train_dataset = art_title_train_dataset.padded_batch(art_title_vocab_proc.batch_size, padded_shapes=([max_art_title_length], [1])).repeat()
+  art_title_test_dataset = art_title_test_dataset.padded_batch(art_title_vocab_proc.batch_size, padded_shapes=([max_art_title_length],[1])).repeat()
 
-  affl_train_dataset = affl_train_dataset.padded_batch(affil_vocab_proc.batch_size, padded_shapes=([max_affl_length], [1]))
-  affl_test_dataset = affl_test_dataset.padded_batch(affil_vocab_proc.batch_size, padded_shapes=([max_affl_length],[1]))
+  affl_train_dataset = affl_train_dataset.padded_batch(affil_vocab_proc.batch_size, padded_shapes=([max_affl_length], [1])).repeat()
+  affl_test_dataset = affl_test_dataset.padded_batch(affil_vocab_proc.batch_size, padded_shapes=([max_affl_length],[1])).repeat()
 
-  keyword_train_dataset = keyword_train_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length], [1]))
-  keyword_test_dataset = keyword_test_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length],[1]))
+  keyword_train_dataset = keyword_train_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length], [1])).repeat()
+  keyword_test_dataset = keyword_test_dataset.padded_batch(keyword_vocab_proc.batch_size, padded_shapes=([max_keyword_length],[1])).repeat()
 
   return_datasets = Datasets(abs_text_train_dataset=abs_text_train_dataset,
                                 abs_text_test_dataset=abs_text_test_dataset,
