@@ -259,7 +259,7 @@ def train_CNNAux(datasets,
     # callbacks.append(EarlyStopping(monitor="val_))
     callbacks.append(ReduceLROnPlateau())
     # Tensorboard in this version of Keras, broken. Need to update to latest version
-    # callbacks.append(TensorBoard())
+    callbacks.append(TensorBoard())
     callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
     
     verbosity = 2
