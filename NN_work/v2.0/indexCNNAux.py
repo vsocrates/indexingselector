@@ -27,6 +27,7 @@ from keras.callbacks import EarlyStopping
 from keras.callbacks import ReduceLROnPlateau
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
+from keras import regularizers
 
 from keras.optimizers import SGD
 
@@ -147,6 +148,7 @@ def train_CNNAux(datasets,
       conv = Convolution1D(filters=globals.NUM_FILTERS,
                            kernel_size=sz,
                            padding="valid",
+                           kernel_regularizer=regularizers.l2(0.01),
                            activation="relu",
                            strides=1,
                            name=conv_name)(before_conv_dense)
