@@ -148,7 +148,7 @@ def train_CNNAux(datasets,
       conv = Convolution1D(filters=globals.NUM_FILTERS,
                            kernel_size=sz,
                            padding="valid",
-                           kernel_regularizer=regularizers.l2(0.01),
+                           kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                            activation="relu",
                            strides=1,
                            name=conv_name)(before_conv_dense)
