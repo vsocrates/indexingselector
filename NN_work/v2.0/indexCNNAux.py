@@ -237,22 +237,23 @@ def train_CNNAux(datasets,
       aux_input3
       ], outputs=[model_output])
     
-    # truepos_metricfn = BinaryTruePositives()
-    # trueneg_metricfn = BinaryTrueNegatives()
-    # falsepos_metricfn = BinaryFalsePositives()
-    # falseneg_metricfn = BinaryFalseNegatives()
+    truepos_metricfn = BinaryTruePositives()
+    trueneg_metricfn = BinaryTrueNegatives()
+    falsepos_metricfn = BinaryFalsePositives()
+    falseneg_metricfn = BinaryFalseNegatives()
     recall = Recall()
     precision = Precision()
     F1score = F1Score()
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
-      metrics=['accuracy', recall, precision, F1score], 
+      metrics=['accuracy', recall, precision, F1score, 
+                           truepos_metricfn,
+                           trueneg_metricfn,
+                           falsepos_metricfn,
+                           falseneg_metricfn]
+
       # loss_weights=[1., 0.0]
     )
-                           # truepos_metricfn,
-                           # trueneg_metricfn,
-                           # falsepos_metricfn,
-                           # falseneg_metricfn])
     # model._make_predict_function()
                   # will be useful when we actually combine
     
