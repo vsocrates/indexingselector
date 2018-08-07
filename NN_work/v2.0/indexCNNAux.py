@@ -95,6 +95,7 @@ def train_CNNAux(datasets,
               try:
                 *inputs, labels = sess.run(vals)
                 # this is the only thing in the list, idk why its in there. 
+                # print(inputs[0])
                 value_list.append(inputs[0])
               except tf.errors.OutOfRangeError:
                 if globals.DEBUG:
@@ -148,7 +149,7 @@ def train_CNNAux(datasets,
       conv = Convolution1D(filters=globals.NUM_FILTERS,
                            kernel_size=sz,
                            padding="valid",
-                           # kernel_regularizer=regularizers.l1_l2(l1=0.04, l2=0.05),
+                           kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                            activation="relu",
                            strides=1,
                            name=conv_name)(before_conv_dense)
@@ -224,26 +225,26 @@ def train_CNNAux(datasets,
                             # auxdropout2,
                             auxdropout3])
     
-    # normed = BatchNormalization()(concat)
+    normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   activation="relu")(concat)
-    # dense = BatchNormalization()(dense)
+    dense = BatchNormalization()(dense)
               
     dense = Dense(globals.HIDDEN_DIMS,
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   activation="relu")(dense)
-    # dense = BatchNormalization()(dense)
+    dense = BatchNormalization()(dense)
                   
     dense = Dense(globals.HIDDEN_DIMS,
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   activation="relu")(dense)
-    # dense = BatchNormalization()(dense)
+    dense = BatchNormalization()(dense)
     
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
 
     # stochastic gradient descent algo, currently unused
-    opt = SGD(lr=0.01)
+    opt = SGD(lr=0.001)
 
     model = Model(inputs=[main_input,
       # aux_input1,
@@ -301,6 +302,9 @@ def train_CNNAux(datasets,
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
       outw2v_path = pattern.search(globals.PRETRAINED_W2V_PATH).group(0).split(".")[0]
-      model.save("CNN_" + outxml_path + "_" + outw2v_path + "_saved_model.h5")
-                        
+      model.save("CNNAux_" + globals.RUN_NUMBER + outxml_path + "_" + outw2v_path + "_saved_model.h5")
+    
+    test_on_SVM = True
+    if test_on_SVM:
+      pass
   
