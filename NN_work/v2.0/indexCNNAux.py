@@ -17,7 +17,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # print(tf.__version__)
 
 # Keras
-from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D
+from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D, BatchNormalization
 from keras.models import Model
 from keras import backend
 
@@ -222,7 +222,8 @@ def train_CNNAux(datasets,
                             # auxdropout2,
                             auxdropout3])
     
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(concat)
+    normed = BatchNormalization()(concat)
+    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(normed)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
@@ -257,10 +258,10 @@ def train_CNNAux(datasets,
     
     callbacks = []
     # callbacks.append(EarlyStopping(monitor="val_))
-    callbacks.append(ReduceLROnPlateau())
+    # callbacks.append(ReduceLROnPlateau())
     # Tensorboard in this version of Keras, broken. Need to update to latest version
     callbacks.append(TensorBoard(log_dir="./tboard_logs"))
-    callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
+    # callbacks.append(ModelCheckpoint("CNNweights.{epoch:02d}-{val_loss:.2f}.hdf5", period=5))
     
     verbosity = 2
     if globals.DEBUG:
