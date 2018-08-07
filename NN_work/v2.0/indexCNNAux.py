@@ -227,7 +227,7 @@ def train_CNNAux(datasets,
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  activation="relu")(dense)
+                  activation="relu")(concat)
     dense = BatchNormalization()(dense)
               
     dense = Dense(globals.HIDDEN_DIMS,
