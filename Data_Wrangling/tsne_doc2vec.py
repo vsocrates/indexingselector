@@ -130,7 +130,8 @@ def main():
   
   output_file = os.path.splitext(os.path.basename(globals.XML_FILE))[0] + "_doc2vec_50dim.w2v"
   
-  model.save_word2vec_format(output_file, doctag_vec=True, word_vec=False)
+  # model.save_word2vec_format(output_file, doctag_vec=True, word_vec=False)
+  model.save_word2vec_format(output_file)
   print("Model saved!")
   
   word2vec2tensor.word2vec2tensor(output_file, "chemistry")
