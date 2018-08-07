@@ -6,7 +6,7 @@ global WITH_AUX_INFO
 global MATRIX_SIZE#  = 9000
 global VOCAB_LOWERCASE
 global SPLIT_WITH_DATE
-
+global RUN_NUMBER
 # Common Model Hyperparameters
 global AUX_TRAINABLE
 global REMOVE_STOP_WORDS

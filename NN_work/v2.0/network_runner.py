@@ -131,6 +131,7 @@ def parse_arguments():
   parser.add_argument("-j", "--max-vocab-size", help="get the first N words from pre-trained word2vec model", type=int, default=80000)
   parser.add_argument("-lw", "--lower-vocab", help="make vocab lowercase", action="store_true")
   parser.add_argument("-sd", "--split-by-date", help="Split test/train by date. Overrides percentage selection - format YYYY-MM-DD", type=valid_date, default="")
+  parser.add_argument("-rn", "--run-number", help="Don't set this yourself, it will be set in slurm scripts", required=True)
   
   # Common Model hyperparameters  
   parser.add_argument("-at", "--aux-trainable", help="Auxiliary information trainable", action="store_true")
@@ -164,6 +165,7 @@ def parse_arguments():
 
   arguments = parser.parse_args()
   globals.XML_FILE = arguments.data_file
+  globals.RUN_NUMBER = arguments.run_number
   globals.POS_XML_FILE = arguments.pos_data_file
   globals.WITH_AUX_INFO = arguments.get_aux_info
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
