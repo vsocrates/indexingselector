@@ -225,9 +225,9 @@ def train_CNNAux(datasets,
                             auxdropout3])
     
     normed = BatchNormalization()(concat)
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(normed)
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
-    dense = Dense(globals.HIDDEN_DIMS, activation="relu")(dense)
+    dense = Dense(globals.HIDDEN_DIMS, kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01), activation="relu")(normed)
+    dense = Dense(globals.HIDDEN_DIMS,kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01), activation="relu")(dense)
+    dense = Dense(globals.HIDDEN_DIMS,kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01), activation="relu")(dense)
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
 
     # stochastic gradient descent algo, currently unused
