@@ -50,7 +50,9 @@ DO_TIMING_ANALYSIS = False
 # A list of key words to search for to clean up the affiliations listings
 AFFL_DEPT_LIST = ["faculty", "school", "division", "department", "center", "centre", "institute", "division", "laboratory", "college", "bureau", "agency", "program", "academy", "instituto", "archive"]
 
-
+'''
+  Get only the text out of the full dictionary extracted from get_abstract_text_with_targets or get_abstract_text_with_targets_and_metadata
+'''
 def get_text_list(dictList):
   output_list = []
   for text in dictList:
@@ -72,7 +74,9 @@ def get_target_list(dictList):
       output_list.append([0])
   return output_list
 
-
+'''
+  Gets a good approximation of the byte size of an object. 
+'''
 def get_size(obj, seen=None):
     """Recursively finds size of objects"""
     size = sys.getsizeof(obj)
@@ -94,7 +98,9 @@ def get_size(obj, seen=None):
     return size
 
 # ------------------------- XML data loading methods/conversion to Dataset methods  ------------------------- 
-
+'''
+  The file that allows for fast iteration through an XML file using lxml.
+'''
 def fast_iter(context, func, *args, **kwargs):
   """
   http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
@@ -114,7 +120,7 @@ def fast_iter(context, func, *args, **kwargs):
       root.clear()
   del context
 
-  # Deprecated, not used
+# Deprecated, not used
 def get_abstract_text_with_targets(elem, output_list):
   cit_dict = {}
   
@@ -141,7 +147,10 @@ def get_abstract_text_with_targets(elem, output_list):
     cit_dict['dcom'] = dcom_date
   
   output_list.append(cit_dict)
-    
+
+'''
+  This file is the one that parses each individual record in the XML file.
+'''
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
   global NUM_POS
   global NUM_NEG
@@ -200,6 +209,9 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   output_list.append(cit_dict)
 
+'''
+  This is the main file called from network_runner. It does all of the data extraction, vocabulary building, and dataset generation for consumption through the index* NN files.
+'''  
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, train_size=0.0, with_aux_info=False, pos_text_list=[], test_date=None):
   global NUM_POS
@@ -354,6 +366,9 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, test_date, train_size
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
 
+'''
+  Does the same thing as prepare_data_text_only but includes all the auxiliary information.
+'''  
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_size, save_records=False):
   # shouldn't actually need to do this, but just in case.
@@ -647,7 +662,10 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
   # TODO: this is for if we want to map backwards, which we can do later.
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
-  
+
+'''
+  This is called when we want to split by date instead of using the percentage split from sklearn
+''' 
 def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
   train_set = []
   test_set = []
@@ -671,7 +689,9 @@ def train_test_split_with_date(*arrays, train_list=None, shuffle=True):
   return itertools.chain(zip(*train_set), zip(*test_set))
       
 # ------------------------- W2V Gensim Loading Method  ------------------------- 
-
+'''
+  Loads the word2vec model
+''' 
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)            
 def get_word_to_vec_model(model_path, matrix_size, vocab_proc, vocab_proc_tag):
   vocab = vocab_proc[vocab_proc_tag].vocab

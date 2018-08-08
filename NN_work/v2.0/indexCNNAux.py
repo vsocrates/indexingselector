@@ -157,6 +157,8 @@ def train_CNNAux(datasets,
       # conv = GlobalMaxPooling1D()(conv)
       conv = MaxPooling1D(pool_size=2)(conv)
       conv = Flatten()(conv)
+      dropout_conv_name = "conv1Ddrop-%s" % sz
+      conv = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name=dropout_conv_name)(conv)    
       conv_blocks.append(conv)
     conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 
