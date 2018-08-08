@@ -142,6 +142,7 @@ def train_CNNAux(datasets,
       dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
+    before_conv_dense = BatchNormalization()(before_conv_dense)
     # Convolutional block
     conv_blocks = []
     for sz in globals.FILTER_SIZES:
@@ -149,7 +150,7 @@ def train_CNNAux(datasets,
       conv = Convolution1D(filters=globals.NUM_FILTERS,
                            kernel_size=sz,
                            padding="valid",
-                           kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                           kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.03),
                            activation="relu",
                            strides=1,
                            name=conv_name)(before_conv_dense)
@@ -227,7 +228,7 @@ def train_CNNAux(datasets,
     
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   activation="relu")(concat)
     # dense = BatchNormalization()(dense)
               
@@ -238,8 +239,10 @@ def train_CNNAux(datasets,
                   
     dense = Dense(globals.HIDDEN_DIMS,
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  activation="relu")(dense)
+                  # activation="relu"
+                  )(dense)
     dense = BatchNormalization()(dense)
+    dense = Activation("relu")(dense)
     
     model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
 

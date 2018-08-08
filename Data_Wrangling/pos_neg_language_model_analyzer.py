@@ -38,7 +38,7 @@ def fast_iter(context, func, *args, **kwargs):
   del context
 
 
-def make_lang_model(elem, output_list):
+def get_data(elem, output_list):
 
   cit_dict = {}
   
@@ -103,7 +103,7 @@ def main():
   text_list = []
   with open(xml_file, "rb") as xmlf:      
     journal_context = etree.iterparse(xmlf, events=('start', 'end', ), encoding='utf-8')
-    fast_iter(journal_context, make_lang_model, text_list)
+    fast_iter(journal_context, get_data, text_list)
   
   should_remove_stop_words = True
   should_stem = False
