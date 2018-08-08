@@ -260,15 +260,18 @@ def train_CNNAux(datasets,
     
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
-                  kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  kernel_regularizer=regularizers.l1_l2(l1=0.02, l2=0.02),
                   activation="relu")(concat)
     # dense = BatchNormalization()(dense)
               
     dense = Dense(globals.HIDDEN_DIMS,
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   activation="relu")(dense)
     # dense = BatchNormalization()(dense)
-                  
+    dense = Dense(globals.HIDDEN_DIMS,
+                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  # activation="relu"
+                  )(dense)                  
     dense = Dense(globals.HIDDEN_DIMS,
                   # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   # activation="relu"
@@ -276,10 +279,9 @@ def train_CNNAux(datasets,
     dense = BatchNormalization()(dense)
     dense = Activation("relu")(dense)
     
-    dense = Dense(1,
-    # activation="softmax",
+    model_output = Dense(1,
+    activation="sigmoid",
     name="main_output")(dense)
-    model_output = Activation(tf.nn.softmax)(dense)
 
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=globals.LEARNING_RATE)
@@ -348,24 +350,32 @@ def train_CNNAux(datasets,
     val_batch_num)
 
                         
-    # x_true = []
-    # y_true = []
-    # counter = 0
-    # for A,y in itr_validate:
-      # if counter > globals.TEST_NUM_EXAMPLES:
-        # break
-      # print("A: ", A)
-      # print("Y: ", y)
-      # x_true.append(A)
-      # y_true.append(y)
-      # counter += 1
+    x_true = []
+    y_true = []
+    counter = 0
+    for A,y in itr_validate:
+      if counter > globals.TEST_NUM_EXAMPLES:
+        break
+      print("A: ", A)
+      print("Y: ", y)
+      x_true.append(A)
+      y_true.append(y)
+      counter += 1
     # print("x_true: ", x_true[0])
     # print("y_true: ", y_true[:2])
-    # y_pred = model.predict(x=x_true[0],
-                            # steps=1)
+    y_pred_total = []
+    for dataset in x_true:
+      y_pred = model.predict(x=dataset,
+                            steps=1)  
+      y_pred_total.append(y_pred)
+    correct_preds = []
+    for vals in zip(y_true, y_pred_total):
+      print("vals1: ", vals[0])
+      print("vals: ", vals[1])
+      correct_preds.append(vals[0] == vals[1])
+    print("correct_preds[0]: ", correct_preds[0])
     # correct_preds = y_pred == y_true[0]
-    # print("y_pred: ", y_pred,axis=1)
-    # print("correct_preds:", correct_preds)
+    
     
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
