@@ -26,6 +26,7 @@ from vocab import VocabProcessor
 from conditional_decorator import conditional_decorator
 import globals
 
+# Some named tuples for all the datasets to be return and the max lengths for each of them.
 Datasets = collections.namedtuple('Datasets',['abs_text_train_dataset',
                                               'abs_text_test_dataset',
                                               "jrnl_title_train_dataset",
@@ -45,6 +46,8 @@ Dataset_Max_Lengths = collections.namedtuple('Dataset_Max_Lengths', ["abs_text_m
                                                                     ])
 
 DO_TIMING_ANALYSIS = False 
+
+# A list of key words to search for to clean up the affiliations listings
 AFFL_DEPT_LIST = ["faculty", "school", "division", "department", "center", "centre", "institute", "division", "laboratory", "college", "bureau", "agency", "program", "academy", "instituto", "archive"]
 
 

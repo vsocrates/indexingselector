@@ -17,7 +17,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # print(tf.__version__)
 
 # Keras
-from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D, BatchNormalization
+from keras.layers import Input, Embedding, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten, Concatenate, GlobalMaxPooling1D, BatchNormalization, Activation
 from keras.models import Model
 from keras import backend
 
