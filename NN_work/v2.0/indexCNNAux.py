@@ -201,7 +201,7 @@ def train_CNNAux(datasets,
 
     art_title_embedding_layer = Flatten()(art_title_embedding_layer)
     auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
-    
+    auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)
     
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
