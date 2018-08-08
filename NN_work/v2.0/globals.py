@@ -56,3 +56,4 @@ global END_ID
 END_ID = 3
 
 global WORD_FREQ
+global TEST_NUM_EXAMPLES

@@ -488,10 +488,10 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                                 affiliation_ids,
                                                 keyword_ids,
                                                 labels,
-                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=True)
+                                                test_size=round(1.0-train_size, 2), random_state=42, shuffle=False)
     print("how much in train: ", len(abs_text_train))
     print("how much in test: ", len(abs_text_test))
-                                            
+    globals.TEST_NUM_EXAMPLES = len(abs_text_test)
   else:
     abs_text_train, jrnl_title_train, \
     art_title_train, affl_train, \

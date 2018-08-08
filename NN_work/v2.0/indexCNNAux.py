@@ -110,6 +110,36 @@ def train_CNNAux(datasets,
             labels_out.append(labels) # for main output
             yield value_list, labels_out
 
+    def make_multiple_iterator_for_prediction(dataset_list, batch_num):
+        while True:
+          itr_list = []
+          next_val_list = []
+          for dataset in dataset_list:
+            iterator = dataset.make_one_shot_iterator()
+            itr_list.append(iterator)
+            next_val_list.append(iterator.get_next())
+          # iterator = dataset.make_one_shot_iterator()
+          # next_val = iterator.get_next() 
+          for i in range(batch_num):
+            value_list  = []
+            for vals in next_val_list:
+              try:
+                *inputs, labels = sess.run(vals)
+                # this is the only thing in the list, idk why its in there. 
+                # print(inputs[0])
+                value_list.append(inputs[0])
+              except tf.errors.OutOfRangeError:
+                if globals.DEBUG:
+                  print("OutOfRangeError Exception Thrown")          
+                break
+              except Exception as e: 
+                if globals.DEBUG:
+                  print(e)
+                  print("Unknown Exception Thrown")
+                break
+            yield value_list
+            
+            
     train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
     print("train_batch_num" , train_batch_num)
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
@@ -246,7 +276,10 @@ def train_CNNAux(datasets,
     dense = BatchNormalization()(dense)
     dense = Activation("relu")(dense)
     
-    model_output = Dense(1, activation="sigmoid", name="main_output")(dense)
+    dense = Dense(1,
+    # activation="softmax",
+    name="main_output")(dense)
+    model_output = Activation(tf.nn.softmax)(dense)
 
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=globals.LEARNING_RATE)
@@ -302,7 +335,38 @@ def train_CNNAux(datasets,
                         # class_weight={0:0.2, 1:1.0},
                         workers=0,
                         callbacks=callbacks)
+
+    val_batch_num = 1 #int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
+    print("val_batch_num: ", val_batch_num)
                         
+    itr_validate = make_multiple_iterator(
+    [
+    datasets.abs_text_test_dataset,
+    # datasets.affl_test_dataset,
+    # datasets.keyword_train_dataset,
+    datasets.art_title_test_dataset],
+    val_batch_num)
+
+                        
+    # x_true = []
+    # y_true = []
+    # counter = 0
+    # for A,y in itr_validate:
+      # if counter > globals.TEST_NUM_EXAMPLES:
+        # break
+      # print("A: ", A)
+      # print("Y: ", y)
+      # x_true.append(A)
+      # y_true.append(y)
+      # counter += 1
+    # print("x_true: ", x_true[0])
+    # print("y_true: ", y_true[:2])
+    # y_pred = model.predict(x=x_true[0],
+                            # steps=1)
+    # correct_preds = y_pred == y_true[0]
+    # print("y_pred: ", y_pred,axis=1)
+    # print("correct_preds:", correct_preds)
+    
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
