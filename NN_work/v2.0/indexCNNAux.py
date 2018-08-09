@@ -172,7 +172,7 @@ def train_CNNAux(datasets,
       dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
-    before_conv_dense = BatchNormalization(axis=1)(before_conv_dense)
+    before_conv_dense = BatchNormalization()(before_conv_dense)
     # Convolutional block
     conv_blocks = []
     for sz in globals.FILTER_SIZES:
@@ -349,31 +349,30 @@ def train_CNNAux(datasets,
     datasets.art_title_test_dataset],
     val_batch_num)
 
-                        
-    # x_true = []
-    # y_true = []
-    # counter = 0
-    # for A,y in itr_validate:
-      # if counter > globals.TEST_NUM_EXAMPLES:
-        # break
-      # # print("A: ", A)
-      # # print("Y: ", y)
-      # x_true.append(A)
-      # y_true.append(y)
-      # counter += 1
-    # # print("x_true: ", x_true[0])
-    # # print("y_true: ", y_true[:2])
-    # y_pred_total = []
-    # for dataset in x_true:
-      # y_pred = model.predict(x=dataset,
-                            # steps=1)  
-      # y_pred_total.append(y_pred)
-    # correct_preds = []
-    # for vals in zip(y_true, y_pred_total):
-      # print("vals1: ", vals[0][0])
-      # print("vals: ", vals[1])
-      # correct_preds.append(vals[0][0] == np.rint(vals[1]))
-    # print(correct_preds)
+    x_true = []
+    y_true = []
+    counter = 0
+    for A,y in itr_validate:
+      if counter > globals.TEST_NUM_EXAMPLES:
+        break
+      # print("A: ", A)
+      # print("Y: ", y)
+      x_true.append(A)
+      y_true.append(y)
+      counter += 1
+    # print("x_true: ", x_true[0])
+    # print("y_true: ", y_true[:2])
+    y_pred_total = []
+    for dataset in x_true:
+      y_pred = model.predict(x=dataset,
+                            steps=1)  
+      y_pred_total.append(y_pred)
+    correct_preds = []
+    for vals in zip(y_true, y_pred_total):
+      print("vals1: ", vals[0][0])
+      print("vals: ", vals[1])
+      correct_preds.append(vals[0][0] == np.rint(vals[1]))
+    print(correct_preds[:2])
     # for idx1, val in enumerate(correct_preds):
       # print("oh boy2342342: ", val)
       # for idx2, val2 in enumerate(val):
