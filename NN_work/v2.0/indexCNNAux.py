@@ -169,7 +169,7 @@ def train_CNNAux(datasets,
                                   input_length=max_doc_lengths.abs_text_max_length,
                                   trainable=globals.EMBEDDING_TRAINABLE,
                                   name="embedding")(main_input)
-      embedding_layer = TimestepDropout(0.10)(embedding_layer)
+      # embedding_layer = TimestepDropout(0.10)(embedding_layer)
       dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1", noise_shape=(None,1, None))(embedding_layer)
       
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
