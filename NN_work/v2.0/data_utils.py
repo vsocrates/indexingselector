@@ -307,9 +307,9 @@ def prepare_data_text_only(vocab_proc_dict, doc_data_list, test_date, train_size
     
     # add numeric labels
     if doc['target'] == "MEDLINE":
-      labels.append([1,0])
+      labels.append([1])
     elif doc['target'] == "PubMed-not-MEDLINE":
-      labels.append([0,1])
+      labels.append([0])
   
   # we are adding start and end tags
   for doc in all_word_id_list:
