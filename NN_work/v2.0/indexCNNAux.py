@@ -264,20 +264,20 @@ def train_CNNAux(datasets,
                   activation="relu")(concat)
     # dense = BatchNormalization()(dense)
               
-    dense = Dense(globals.HIDDEN_DIMS,
-                  kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  activation="relu")(dense)
+    # dense = Dense(globals.HIDDEN_DIMS,
+                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  # activation="relu")(dense)
+    # # dense = BatchNormalization()(dense)
+    # dense = Dense(globals.HIDDEN_DIMS,
+                  # # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  # # activation="relu"
+                  # )(dense)                  
+    # dense = Dense(globals.HIDDEN_DIMS,
+                  # # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  # # activation="relu"
+                  # )(dense)
     # dense = BatchNormalization()(dense)
-    dense = Dense(globals.HIDDEN_DIMS,
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  # activation="relu"
-                  )(dense)                  
-    dense = Dense(globals.HIDDEN_DIMS,
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  # activation="relu"
-                  )(dense)
-    dense = BatchNormalization()(dense)
-    dense = Activation("relu")(dense)
+    # dense = Activation("relu")(dense)
     
     model_output = Dense(1,
     activation="sigmoid",
@@ -349,40 +349,44 @@ def train_CNNAux(datasets,
     datasets.art_title_test_dataset],
     val_batch_num)
 
-    x_true = []
-    y_true = []
-    counter = 0
-    for A,y in itr_validate:
-      if counter > globals.TEST_NUM_EXAMPLES:
-        break
-      # print("A: ", A)
-      # print("Y: ", y)
-      x_true.append(A)
-      y_true.append(y)
-      counter += 1
-    # print("x_true: ", x_true[0])
-    # print("y_true: ", y_true[:2])
-    y_pred_total = []
-    for dataset in x_true:
-      y_pred = model.predict(x=dataset,
-                            steps=1)  
-      y_pred_total.append(y_pred)
-    correct_preds = []
-    for vals in zip(y_true, y_pred_total):
-      print("vals1: ", vals[0][0])
-      print("vals: ", vals[1])
-      correct_preds.append(vals[0][0] == np.rint(vals[1]))
-    print(correct_preds[:2])
-    # for idx1, val in enumerate(correct_preds):
-      # print("oh boy2342342: ", val)
-      # for idx2, val2 in enumerate(val):
-        # print("oh boy: ", val2)
+    # x_true = []
+    # y_true = []
+    # counter = 0
+    # for A,y in itr_validate:
+      # if counter > globals.TEST_NUM_EXAMPLES:
+        # break
+      # # print("A: ", A)
+      # # print("Y: ", y)
+      # x_true.append(A)
+      # y_true.append(y)
+      # counter += 1
+    # # print("x_true: ", x_true[0])
+    # # print("y_true: ", y_true[:2])
+    # y_pred_total = []
+    # for dataset in x_true:
+      # y_pred = model.predict(x=dataset,
+                            # steps=1)  
+      # y_pred_total.append(y_pred)
+    # correct_preds = []
+    # for vals in zip(y_true, y_pred_total):
+      # print("vals1: ", vals[0][0])
+      # print("vals: ", vals[1])
+      # correct_preds.append(vals[0][0] == np.rint(vals[1]))
+    # print(correct_preds[:2])
+    
+    # for idx1, prediction_set in enumerate(correct_preds):
+      # # print("oh boy2342342: ", prediction_set)
+      # for idx2, val2 in enumerate(prediction_set):
+        # # print("oh boy: ", val2)
         # if val2 == False:
-          # print("idx: ", idx1)
-          # print("idx: ", idx2)
-    # correct_preds = y_pred == y_true[0]
+          # print("1111x_true: ", x_true[idx1])
+          # print("x_true: ", x_true[idx1][idx2])
+          # # print("idx: ", idx1)
+          # # print("idx: ", idx2)
     
     
+          
+          
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
