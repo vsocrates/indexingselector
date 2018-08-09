@@ -50,6 +50,7 @@ from confusion_matrix_classes import BinaryFalseNegatives
 from confusion_matrix_classes import Recall
 from confusion_matrix_classes import Precision 
 from confusion_matrix_classes import F1Score
+from TimestepDropout import TimestepDropout
 
 DO_TIMING_ANALYSIS = False
 
@@ -168,8 +169,9 @@ def train_CNNAux(datasets,
                                   input_length=max_doc_lengths.abs_text_max_length,
                                   trainable=globals.EMBEDDING_TRAINABLE,
                                   name="embedding")(main_input)
-
-      dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1")(embedding_layer)
+      embedding_layer = TimestepDropout(0.10)(embedding_layer)
+      dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1", noise_shape=(None,1, None))(embedding_layer)
+      
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
     before_conv_dense = BatchNormalization()(before_conv_dense)
@@ -229,9 +231,9 @@ def train_CNNAux(datasets,
                                   input_length=max_doc_lengths.art_title_max_length,
                                   name="art_title_embedding")(aux_input3)
 
-    art_title_embedding_layer = Flatten()(art_title_embedding_layer)
-    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout")(art_title_embedding_layer)    
-    auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)
+    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout", noise_shape=(None,1, None))(art_title_embedding_layer)    
+    auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
+    auxdropout3 = Flatten()(auxdropout3)
     
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
@@ -343,48 +345,49 @@ def train_CNNAux(datasets,
     val_batch_num = 1 #int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     print("val_batch_num: ", val_batch_num)
                         
-    itr_validate = make_multiple_iterator(
-    [
-    datasets.abs_text_test_dataset,
-    # datasets.affl_test_dataset,
-    # datasets.keyword_train_dataset,
-    datasets.art_title_test_dataset],
-    val_batch_num)
+    # itr_validate = make_multiple_iterator(
+    # [
+    # datasets.abs_text_test_dataset,
+    # # datasets.affl_test_dataset,
+    # # datasets.keyword_train_dataset,
+    # datasets.art_title_test_dataset],
+    # val_batch_num)
 
-    x_true = []
-    y_true = []
-    counter = 0
-    for A,y in itr_validate:
-      if counter > globals.TEST_NUM_EXAMPLES:
-        break
-      # print("A: ", A)
-      # print("Y: ", y)
-      x_true.append(A)
-      y_true.append(y)
-      counter += 1
-    # print("x_true: ", x_true[0])
-    # print("y_true: ", y_true[:2])
-    y_pred_total = []
-    for dataset in x_true:
-      y_pred = model.predict(x=dataset,
-                            steps=1)  
-      y_pred_total.append(y_pred)
-    correct_preds = []
-    for vals in zip(y_true, y_pred_total):
-      print("vals1: ", vals[0][0])
-      print("vals: ", vals[1])
-      correct_preds.append(vals[0][0] == np.rint(vals[1]))
-    print(correct_preds[:2])
+    # x_true = []
+    # y_true = []
+    # counter = 0
+    # for A,y in itr_validate:
+      # if counter > globals.TEST_NUM_EXAMPLES:
+        # break
+      # # print("A: ", A)
+      # # print("Y: ", y)
+      # x_true.append(A)
+      # y_true.append(y)
+      # counter += 1
+    # # print("x_true: ", x_true[0])
+    # # print("y_true: ", y_true[:2])
+    # y_pred_total = []
+    # for dataset in x_true:
+      # y_pred = model.predict(x=dataset,
+                            # steps=1)  
+      # y_pred_total.append(y_pred)
+
+    # correct_preds = []
+    # for vals in zip(y_true, y_pred_total):
+      # print("vals1: ", vals[0][0])
+      # print("vals: ", vals[1])
+      # correct_preds.append(vals[0][0] == np.rint(vals[1]))
+    # print(correct_preds[:2])
     
-    for idx1, prediction_set in enumerate(correct_preds):
-      # print("oh boy2342342: ", prediction_set)
-      for idx2, val2 in enumerate(prediction_set):
-        # print("oh boy: ", val2)
-        if val2 == False:
-          print("1111x_true: ", x_true[idx1])
-          print("x_true: ", x_true[idx1][idx2])
-          # print("idx: ", idx1)
-          # print("idx: ", idx2)
+    # for idx1, prediction_set in enumerate(correct_preds):
+      # # print("oh boy2342342: ", prediction_set)
+      # for idx2, val2 in enumerate(prediction_set):
+        # # print("oh boy: ", val2)
+        # if val2 == False:
+          # print("1111x_true: ", x_true[idx1])
+          # print("x_true: ", x_true[idx1][idx2])
+          # # print("idx: ", idx1)
+          # # print("idx: ", idx2)
     
     
           
