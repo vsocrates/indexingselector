@@ -146,6 +146,7 @@ def train_CNNAux(datasets,
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     print("val_batch_num: ", val_batch_num)
 
+    # have to include the right number of datasets in list based on # of model inputs
     itr_train = make_multiple_iterator(
     [
     datasets.abs_text_train_dataset,
@@ -217,7 +218,7 @@ def train_CNNAux(datasets,
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
     auxdropout3 = Flatten()(auxdropout3)
     
-    # add CNN to title
+    # add CNN layers for "title" input
     # title_cnn = CNNBlock(auxdropout3, "title")
     
     # # Auxiliary Convolutional block
@@ -268,15 +269,16 @@ def train_CNNAux(datasets,
     # dense = BatchNormalization()(dense)
     # dense = Activation("relu")(dense)
     
-    model_output = Dense(1,
-    activation="sigmoid",
-    name="main_output")(dense)
 
     
     test_on_SVM = True
     if test_on_SVM:
-      pass
-      
+      model_output = Dense(1, kernel_regularizer=regularizers.l2(0.01))(dense)
+    else:
+      model_output = Dense(1,
+        activation="sigmoid",
+        name="main_output")(dense)
+
     
     
     # stochastic gradient descent algo, currently unused
@@ -296,7 +298,7 @@ def train_CNNAux(datasets,
     precision = Precision()
     F1score = F1Score()
     
-    model.compile(optimizer="adadelta", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
+    model.compile(optimizer="adadelta", loss='hinge',# loss_weights={"main_output":1., "aux_output":0.5},
       metrics=['accuracy', recall, precision, F1score, 
                            truepos_metricfn,
                            trueneg_metricfn,
