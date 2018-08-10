@@ -271,12 +271,12 @@ def train_CNNAux(datasets,
     
 
     
-    test_on_SVM = True
+    test_on_SVM = False
     if test_on_SVM:
       model_output = Dense(1, kernel_regularizer=regularizers.l2(0.01))(dense)
     else:
       model_output = Dense(1,
-        activation="sigmoid",
+        activation="softmax",
         name="main_output")(dense)
 
     
@@ -298,7 +298,7 @@ def train_CNNAux(datasets,
     precision = Precision()
     F1score = F1Score()
     
-    model.compile(optimizer="adadelta", loss='hinge',# loss_weights={"main_output":1., "aux_output":0.5},
+    model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
       metrics=['accuracy', recall, precision, F1score, 
                            truepos_metricfn,
                            trueneg_metricfn,
