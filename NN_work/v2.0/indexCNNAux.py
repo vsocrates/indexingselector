@@ -215,9 +215,9 @@ def train_CNNAux(datasets,
     # ie (the word "the" isn't dropped. one instance of the word "the" is dropped)
     auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout", noise_shape=(None, None, 1))(art_title_embedding_layer)    
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
-    # auxdropout3 = Flatten()(auxdropout3)
+    auxdropout3 = Flatten()(auxdropout3)
     
-    title_cnn = CNNBlock(auxdropout3, "title")
+    # title_cnn = CNNBlock(auxdropout3, "title")
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
     # for sz in FILTER_SIZES:
@@ -241,7 +241,7 @@ def train_CNNAux(datasets,
     concat = Concatenate()([dropout2,
                             # auxdropout1, 
                             # auxdropout2,
-                            title_cnn])
+                            auxdropout3])
     
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
