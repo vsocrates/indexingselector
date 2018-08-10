@@ -175,28 +175,8 @@ def train_CNNAux(datasets,
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
     before_conv_dense = BatchNormalization()(before_conv_dense)
-    # Convolutional block
-    conv_blocks = []
-    for sz in globals.FILTER_SIZES:
-      conv_name = "conv1D-%s" % sz
-      conv = Convolution1D(filters=globals.NUM_FILTERS,
-                           kernel_size=sz,
-                           padding="valid",
-                           kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.03),
-                           activation="relu",
-                           strides=1,
-                           name=conv_name)(before_conv_dense)
-      # conv = GlobalMaxPooling1D()(conv)
-      conv = MaxPooling1D(pool_size=2)(conv)
-      conv = Flatten()(conv)
-      dropout_conv_name = "conv1Ddrop-%s" % sz
-      conv = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name=dropout_conv_name)(conv)    
-      conv_blocks.append(conv)
-    conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
-
-    dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name="dropout2")(conv_blocks_concat)
-    auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(dropout2)
-
+    
+    dropout2 = CNNBlock(before_conv_dense, "main")
     # auxiliary information 1: affiliations
     # aux_input1 = Input(shape=(max_doc_lengths.affl_max_length,), dtype="int32", name="affl_input")
     # affl_embedding_layer = Embedding(input_dim=len(vocab_processors['affiliations'].vocab),
@@ -235,8 +215,9 @@ def train_CNNAux(datasets,
     # ie (the word "the" isn't dropped. one instance of the word "the" is dropped)
     auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout", noise_shape=(None, None, 1))(art_title_embedding_layer)    
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
-    auxdropout3 = Flatten()(auxdropout3)
+    # auxdropout3 = Flatten()(auxdropout3)
     
+    title_cnn = CNNBlock(auxdropout3, "title")
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
     # for sz in FILTER_SIZES:
@@ -260,7 +241,7 @@ def train_CNNAux(datasets,
     concat = Concatenate()([dropout2,
                             # auxdropout1, 
                             # auxdropout2,
-                            auxdropout3])
+                            title_cnn])
     
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
@@ -403,4 +384,29 @@ def train_CNNAux(datasets,
     test_on_SVM = True
     if test_on_SVM:
       pass
+      
+def CNNBlock(input_layer, name):
+
+  # Convolutional block
+  conv_blocks = []
+  for sz in globals.FILTER_SIZES:
+    conv_name = name + "conv1D-%s" % sz
+    conv = Convolution1D(filters=globals.NUM_FILTERS,
+                         kernel_size=sz,
+                         padding="valid",
+                         kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.03),
+                         activation="relu",
+                         strides=1,
+                         name=conv_name)(input_layer)
+    # conv = GlobalMaxPooling1D()(conv)
+    conv = MaxPooling1D(pool_size=2)(conv)
+    conv = Flatten()(conv)
+    dropout_conv_name = name + "conv1Ddrop-%s" % sz
+    conv = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name=dropout_conv_name)(conv)    
+    conv_blocks.append(conv)
+  conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
+
+  dropout2name = name + "dropout2"
+  dropout2 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name=dropout2name)(conv_blocks_concat)
+  return dropout2
   
