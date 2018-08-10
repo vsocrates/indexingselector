@@ -170,7 +170,7 @@ def train_CNNAux(datasets,
                                   trainable=globals.EMBEDDING_TRAINABLE,
                                   name="embedding")(main_input)
       # embedding_layer = TimestepDropout(0.10)(embedding_layer)
-      dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1", noise_shape=(None,1, None))(embedding_layer)
+      dropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="dropout1", noise_shape=(None,None, 1))(embedding_layer)
       
       before_conv_dense = Dense(100, activation="linear", name="before_conv")(dropout1)
     
@@ -231,7 +231,9 @@ def train_CNNAux(datasets,
                                   input_length=max_doc_lengths.art_title_max_length,
                                   name="art_title_embedding")(aux_input3)
 
-    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout", noise_shape=(None,1, None))(art_title_embedding_layer)    
+    # these nosie shapes are actually don't it per token, as opposed to per word. 
+    # ie (the word "the" isn't dropped. one instance of the word "the" is dropped)
+    auxdropout3 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="titledropout", noise_shape=(None, None, 1))(art_title_embedding_layer)    
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
     auxdropout3 = Flatten()(auxdropout3)
     
