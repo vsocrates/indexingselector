@@ -217,7 +217,9 @@ def train_CNNAux(datasets,
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
     auxdropout3 = Flatten()(auxdropout3)
     
+    # add CNN to title
     # title_cnn = CNNBlock(auxdropout3, "title")
+    
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
     # for sz in FILTER_SIZES:
@@ -255,21 +257,28 @@ def train_CNNAux(datasets,
                   activation="relu")(dense)
     # dense = BatchNormalization()(dense)
     dense = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[2])(dense)
-    dense = Dense(globals.HIDDEN_DIMS,
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+    # dense = Dense(globals.HIDDEN_DIMS,
+                  # # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
                   # activation="relu"
-                  )(dense)                  
-    dense = Dense(globals.HIDDEN_DIMS,
-                  # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
-                  # activation="relu"
-                  )(dense)
-    dense = BatchNormalization()(dense)
-    dense = Activation("relu")(dense)
+                  # )(dense)                  
+    # dense = Dense(globals.HIDDEN_DIMS,
+                  # # kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01),
+                  # # activation="relu"
+                  # )(dense)
+    # dense = BatchNormalization()(dense)
+    # dense = Activation("relu")(dense)
     
     model_output = Dense(1,
     activation="sigmoid",
     name="main_output")(dense)
 
+    
+    test_on_SVM = True
+    if test_on_SVM:
+      pass
+      
+    
+    
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=globals.LEARNING_RATE)
 
@@ -287,7 +296,7 @@ def train_CNNAux(datasets,
     precision = Precision()
     F1score = F1Score()
     
-    model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
+    model.compile(optimizer="adadelta", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
       metrics=['accuracy', recall, precision, F1score, 
                            truepos_metricfn,
                            trueneg_metricfn,
@@ -381,9 +390,6 @@ def train_CNNAux(datasets,
       outw2v_path = pattern.search(globals.PRETRAINED_W2V_PATH).group(0).split(".")[0]
       model.save("CNNAux_" + globals.RUN_NUMBER + outxml_path + "_" + outw2v_path + "_saved_model.h5")
     
-    test_on_SVM = True
-    if test_on_SVM:
-      pass
       
 def CNNBlock(input_layer, name):
 
@@ -399,10 +405,10 @@ def CNNBlock(input_layer, name):
                          strides=1,
                          name=conv_name)(input_layer)
     # conv = GlobalMaxPooling1D()(conv)
-    conv = MaxPooling1D(pool_size=2)(conv)
-    conv = Flatten()(conv)
     dropout_conv_name = name + "conv1Ddrop-%s" % sz
+    conv = MaxPooling1D(pool_size=2)(conv)
     conv = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[1], name=dropout_conv_name)(conv)    
+    conv = Flatten()(conv)
     conv_blocks.append(conv)
   conv_blocks_concat = Concatenate()(conv_blocks) if len(conv_blocks) > 1 else conv_blocks[0]
 
