@@ -278,6 +278,7 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
       pos_samples = [text_list[index] for index in yes_class1]
       text_list = pos_samples + neg_downsampled
       np.random.shuffle(text_list)
+    print("Num of articles after downsampling: ", len(text_list))
 
   # we use nltk to word tokenize
   vocab_proc_dict = {}
