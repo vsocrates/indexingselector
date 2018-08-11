@@ -276,7 +276,7 @@ def train_CNNAux(datasets,
       model_output = Dense(1, kernel_regularizer=regularizers.l2(0.01))(dense)
     else:
       model_output = Dense(1,
-        activation="softmax",
+        activation="sigmoid",
         name="main_output")(dense)
 
     
