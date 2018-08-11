@@ -280,7 +280,6 @@ def train_CNNAux(datasets,
         name="main_output")(dense)
 
     
-    
     # stochastic gradient descent algo, currently unused
     opt = SGD(lr=globals.LEARNING_RATE)
 
@@ -336,8 +335,8 @@ def train_CNNAux(datasets,
                         workers=0,
                         callbacks=callbacks)
 
-    val_batch_num = 1 #int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
-    print("val_batch_num: ", val_batch_num)
+    # val_batch_num = 1 #int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
+    # print("val_batch_num: ", val_batch_num)
                         
     # itr_validate = make_multiple_iterator(
     # [
@@ -384,8 +383,6 @@ def train_CNNAux(datasets,
           # # print("idx: ", idx2)
     
     
-          
-          
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]

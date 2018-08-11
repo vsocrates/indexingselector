@@ -272,12 +272,18 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
       neg_samples = [text_list[index] for index in no_class0]
       text_list = neg_samples + pos_downsampled
       np.random.shuffle(text_list)
+      del(neg_samples)
+      del(pos_downsampled)
+      del(pos_downsampled_idx)
     elif local_num_neg > local_num_pos:
       neg_downsampled_idx = np.random.choice(no_class0, size=size_class1, replace=False)
       neg_downsampled = [text_list[index] for index in neg_downsampled_idx]
       pos_samples = [text_list[index] for index in yes_class1]
       text_list = pos_samples + neg_downsampled
       np.random.shuffle(text_list)
+      del(pos_samples)
+      del(neg_downsampled)
+      del(neg_downsampled_idx)
     print("Num of articles after downsampling: ", len(text_list))
 
   # we use nltk to word tokenize
