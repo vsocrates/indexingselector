@@ -7,7 +7,9 @@ global MATRIX_SIZE#  = 9000
 global VOCAB_LOWERCASE
 global SPLIT_WITH_DATE
 global RUN_NUMBER
+global DOWNSAMPLE_TO_MATCH
 # Common Model Hyperparameters
+global SAME_VOCAB
 global AUX_TRAINABLE
 global REMOVE_STOP_WORDS
 global SHOULD_STEM

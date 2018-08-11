@@ -248,7 +248,7 @@ def train_CNNAux(datasets,
     
     # normed = BatchNormalization()(concat)
     dense = Dense(globals.HIDDEN_DIMS, 
-                  kernel_regularizer=regularizers.l1_l2(l1=0.02, l2=0.02),
+                  kernel_regularizer=regularizers.l1_l2(l1=0.03, l2=0.05),
                   activation="relu")(concat)
     # dense = BatchNormalization()(dense)
     dense = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[2])(dense)
@@ -270,7 +270,7 @@ def train_CNNAux(datasets,
     # dense = Activation("relu")(dense)
     
 
-    
+    # the line using the "hinge" loss function theoretically is SVM, but not sure...
     test_on_SVM = False
     if test_on_SVM:
       model_output = Dense(1, kernel_regularizer=regularizers.l2(0.01))(dense)

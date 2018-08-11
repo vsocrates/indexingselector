@@ -132,8 +132,10 @@ def parse_arguments():
   parser.add_argument("-lw", "--lower-vocab", help="make vocab lowercase", action="store_true")
   parser.add_argument("-sd", "--split-by-date", help="Split test/train by date. Overrides percentage selection - format YYYY-MM-DD", type=valid_date, default="")
   parser.add_argument("-rn", "--run-number", help="Don't set this yourself, it will be set in slurm scripts", required=True)
+  parser.add_argument("-ds", "--downsample", help="Downsample data to match pos and neg examples", action="store_true")
   
   # Common Model hyperparameters  
+  parser.add_argument("-tv", "--same-vocab", help="Make the title and abstract use the same vocabulary", action="store_true")
   parser.add_argument("-at", "--aux-trainable", help="Auxiliary information trainable", action="store_true")
   parser.add_argument("-y", "--model-type", help="Which type of model to use", required=True, choices=['CNN', 'CNNAux', 'LSTM', 'LSTMAux'])
   parser.add_argument("-o", "--remove-stop-words", help="flag to remove stop words and punctuation from abstracts", action="store_true")
@@ -167,8 +169,10 @@ def parse_arguments():
   globals.XML_FILE = arguments.data_file
   globals.RUN_NUMBER = arguments.run_number
   globals.POS_XML_FILE = arguments.pos_data_file
+  globals.DOWNSAMPLE_TO_MATCH = arguments.downsample
   globals.WITH_AUX_INFO = arguments.get_aux_info
   globals.PRETRAINED_W2V_PATH = arguments.w2v_path
+
   try:
     w2v_size = int(arguments.word2vec_size)
   except TypeError:
@@ -179,7 +183,9 @@ def parse_arguments():
   globals.MAX_VOCAB_SIZE = arguments.max_vocab_size
   globals.VOCAB_LOWERCASE = arguments.lower_vocab
   globals.SPLIT_WITH_DATE = False
+  
   # Common Model Hyperparameters
+  globals.SAME_VOCAB = arguments.same_vocab
   globals.AUX_TRAINABLE = arguments.aux_trainable
   globals.MODEL_TYPE = arguments.model_type
   if globals.MODEL_TYPE.find("Aux"):

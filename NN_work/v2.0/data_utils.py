@@ -246,15 +246,39 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
     print("Num of pos ex articles: ", len(pos_text_list))
     print("Data size of Pos Ex Articles (bytes): ", get_size(pos_text_list))
     print("Parsing for Pos Ex articles took: --- %s seconds ---" % (end_time - start_time))
-  
+      
   # add positive examples to entire dataset
   np.random.shuffle(pos_text_list)
   if local_num_neg > local_num_pos:
     diff = local_num_neg - local_num_pos
     text_list = text_list + pos_text_list[0:diff]
+    print("Num of articles after pos ex addition: ",len(text_list))
 
-  print("Num of articles after pos ex addition: ",len(text_list))
-  
+  np.random.shuffle(text_list)
+  if globals.DOWNSAMPLE_TO_MATCH:
+    difference = abs(local_num_pos - local_num_neg)
+    output_list = []
+    no_class0 = [i for (i,j) in enumerate(text_list) if j['target'] == "PubMed-not-MEDLINE"]
+    yes_class1 = [i for (i,j) in enumerate(text_list) if j['target'] == "MEDLINE"]
+
+    np.random.shuffle(no_class0)
+    np.random.shuffle(yes_class1)
+    size_class0 = len(no_class0)
+    size_class1 = len(yes_class1)
+
+    if local_num_pos > local_num_neg:
+      pos_downsampled_idx = np.random.choice(yes_class1, size=size_class0, replace=False)
+      pos_downsampled = [text_list[index] for index in pos_downsampled_idx]
+      neg_samples = [text_list[index] for index in no_class0]
+      text_list = neg_samples + pos_downsampled
+      np.random.shuffle(text_list)
+    elif local_num_neg > local_num_pos:
+      neg_downsampled_idx = np.random.choice(no_class0, size=size_class1, replace=False)
+      neg_downsampled = [text_list[index] for index in neg_downsampled_idx]
+      pos_samples = [text_list[index] for index in yes_class1]
+      text_list = pos_samples + neg_downsampled
+      np.random.shuffle(text_list)
+
   # we use nltk to word tokenize
   vocab_proc_dict = {}
   if with_aux_info:
