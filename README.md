@@ -14,9 +14,9 @@ Please check the [Wiki](https://github.com/vsocrates/indexingselector/wiki), whi
 
 ## Dependencies
 
-nltk: http://www.nltk.org/install.html
-gensim: https://radimrehurek.com/gensim/install.html
-lxml: https://lxml.de/installation.html
-sklearn: http://scikit-learn.org/stable/install.html
-Keras:
-Tensorflow:
+nltk: http://www.nltk.org/install.html  
+gensim: https://radimrehurek.com/gensim/install.html  
+lxml: https://lxml.de/installation.html  
+sklearn: http://scikit-learn.org/stable/install.html  
+Keras:  
+Tensorflow:  
