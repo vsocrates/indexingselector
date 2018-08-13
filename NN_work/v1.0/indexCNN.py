@@ -95,7 +95,7 @@ class IndexClassCNN(object):
     
     # calculate mean cross-entropy loss
     with tf.name_scope("loss"):
-      losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
+      losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.scores, labels=self.input_y)
       self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
       
       
@@ -103,12 +103,13 @@ class IndexClassCNN(object):
     with tf.name_scope("accuracy"):
       correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
       self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
-      
-    with tf.name_scope("precision"):
-      
+  
+    # TODO: implement precision/recall
+    # with tf.name_scope("precision"):
       
   def get_inputs(self):
     return self.input_x, self.input_y
+
   def get_outputs(self):
     return self.predictions
     

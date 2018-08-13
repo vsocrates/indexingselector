@@ -7,7 +7,6 @@ from nltk import word_tokenize
 
 from vocab import VocabProcessor
 
-
 def fast_iter(context, func, *args, **kwargs):
   """
   http://www.ibm.com/developerworks/xml/library/x-hiperfparse/ (Liza Daly)
@@ -106,7 +105,30 @@ def get_target_list(dictList):
       output_list.append([1,0])
   return output_list
 
-def data_load(xml_file, text_list, premade_vocab_processor=None):
+import sys
+
+def get_size(obj, seen=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(v, seen) for v in obj.values()])
+        size += sum([get_size(k, seen) for k in obj.keys()])
+    elif hasattr(obj, '__dict__'):
+        size += get_size(obj.__dict__, seen)
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(i, seen) for i in obj])
+    return size
+  
+  
+def data_load(xml_file, text_list, batch_size, train_size, premade_vocab_processor=None):
   # we are timing the abstract text data pull
   start_time = time.time()
 
@@ -116,6 +138,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     
   end_time = time.time()
   
+  print(get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
   np.random.shuffle(text_list)
@@ -125,7 +148,7 @@ def data_load(xml_file, text_list, premade_vocab_processor=None):
     count_vect = premade_vocab_processor
   
   # we use nltk to word tokenize
-  count_vect = VocabProcessor(word_tokenize)
+  count_vect = VocabProcessor(word_tokenize, batch_size, train_size)
   # this function creates the datasets using the vocab.py file
   train_dataset, test_dataset, max_doc_length = count_vect.prepare_data_text_only(text_list)
     

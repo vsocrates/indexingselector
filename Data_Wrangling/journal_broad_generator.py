@@ -50,13 +50,13 @@ def get_journal_category(elem, jids_by_category):
   return "none"
 
 def main():
-  xml_file = "pubmed_result.xml"
+  xml_file = "../NN_work/pubmed_result_2012_2018.xml"
   # xml_file = "small_data.xml"
-  med_history_fname = "pubmed_result_med_history.xml"
-  chem_fname = "pubmed_result_chemistry.xml"
-  physics_fname = "pubmed_result_physics.xml"
-  nuclear_fname = "pubmed_result_nuclear.xml"
-  other_journal_fname = "pubmed_result_other_journal.xml"
+  med_history_fname = "pubmed_result_2012_2018_med_history.xml"
+  chem_fname = "pubmed_result_2012_2018_chemistry.xml"
+  physics_fname = "pubmed_result_2012_2018_physics.xml"
+  nuclear_fname = "pubmed_result_2012_2018_nuclear.xml"
+  other_journal_fname = "pubmed_result_2012_2018_other_journal.xml"
   
   journal_id_categorized_fname = "journal_ids_by_category_parseable.txt"
   ids_by_category_cleaned = {}

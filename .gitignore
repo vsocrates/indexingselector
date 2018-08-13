@@ -119,3 +119,19 @@ NN_work/runs/
 
 # don't want those word2vec binaries
 *.bin
+
+# ignore specifically the pubmed-and-pmc txt doc
+PubMed-and-PMC-w2v.txt
+PubMed-and-PMC-w2v-50dim.txt
+
+# don't need any model files, we'll pull those in ourselves
+*.h5
+*.hdf5
+
+# ignore data folder
+data/
+
+*_word_freqs.txt
+*_pmi.txt
+*.w2v
+tboard_logs/

@@ -26,17 +26,17 @@ from indexCNN import IndexClassCNN
 TRAIN_SET_PERCENTAGE = 0.9
 
 # Model Hyperparameters
-EMBEDDING_DIM = 200 # default 128
+EMBEDDING_DIM = 200 # default 128, pretrained => 200
 FILTER_SIZES = "3,4,5"
 NUM_FILTERS= 128 # this is per filter size; default = 128
 L2_REG_LAMBDA=0.0 # L2 regularization lambda
-DROPOUT_KEEP_PROB=0.5
+DROPOUT_KEEP_PROB=0.65
 
 # Training Parameters
-ALLOW_SOFT_PLACEMENT=True
+ALLOW_SOFT_PLACEMENT=False
 LOG_DEVICE_PLACEMENT=False
-NUM_CHECKPOINTS = 2 # default 5
-BATCH_SIZE = 64 # default 64
+NUM_CHECKPOINTS = 5 # default 5
+BATCH_SIZE = 16 # default 64
 NUM_EPOCHS = 10 # default 200
 EVALUATE_EVERY = 5 # Evaluate the model after this many steps on the test set; default 100
 CHECKPOINT_EVERY = 5 # Save the model after this many steps, every time
@@ -54,8 +54,9 @@ def train_CNN(train_dataset,
   session_conf = tf.ConfigProto(
             allow_soft_placement=ALLOW_SOFT_PLACEMENT, # determines if op can be placed on CPU when GPU not avail
             log_device_placement=LOG_DEVICE_PLACEMENT, # whether device placements should be logged, we don't have any for CPU
-            operation_timeout_in_ms=60000
+            #operation_timeout_in_ms=60000
             )
+  session_conf.gpu_options.allow_growth = True
   sess = tf.Session(config=session_conf)
   with sess.as_default():
     
@@ -115,10 +116,11 @@ def train_CNN(train_dataset,
     # Summaries for loss and accuracy
     loss_summary = tf.summary.scalar("loss", cnn.loss)
     accuracy_summary = tf.summary.scalar("accuracy", cnn.accuracy)
-    
+
+    # TODO: implement precision/recall    
     # Summaries for precision/recall
-    precision_summary = tf.summary.scalar("precision", cnn.precision)
-    recall_summary = tf.summary.scalar("recall", cnn.recall)
+    # precision_summary = tf.summary.scalar("precision", cnn.precision)
+    # recall_summary = tf.summary.scalar("recall", cnn.recall)
     
     # Training Summaries
     train_summary_op = tf.summary.merge([loss_summary, accuracy_summary, grad_summaries_merged])
@@ -162,7 +164,6 @@ def train_CNN(train_dataset,
       """
       cnn.input_x, cnn.input_y = x_batch, y_batch
       cnn.dropout_keep_prob = DROPOUT_KEEP_PROB
-      output = sess.run(x_batch)
       
       # training op doesn't return anything
       _, step, summaries, loss, accuracy = sess.run(
@@ -189,22 +190,29 @@ def train_CNN(train_dataset,
     # Training loop. For each batch...
     for _ in range(NUM_EPOCHS):
       sess.run(train_init_op)
-      input_x, input_y = iterator.get_next()
       train_step(input_x, input_y)
       current_step = tf.train.global_step(sess, global_step)
-      
+
       if current_step % EVALUATE_EVERY == 0:
         print("\nEvaluation:")
         sess.run(test_init_op)
         vocab_processor.reset_test_generator()
-        test_x, test_y = iterator.get_next()
         while True:
           try:
-            test_step(test_x,test_y, writer=test_summary_writer)
+            test_step(input_x,input_y, writer=test_summary_writer)
           except tf.errors.OutOfRangeError:
             print("We are out of range")
             break
-            
+
+#      if current_step % EVALUATE_EVERY == 0:
+#        print("\nEvaluation:")
+#        sess.run(test_init_op)
+#        test_x, test_y = iterator.get_next()
+#        while True:
+#          try:
+#            test_step(test_x,test_y, writer=test_summary_writer)
+#          except tf.errors.OutOfRangeError:
+#            break
       if current_step % CHECKPOINT_EVERY == 0:
         # uses the global step number as part of the file name
         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
@@ -215,60 +223,70 @@ def train_CNN(train_dataset,
     final_model_dir = os.path.abspath(os.path.join(out_dir, "final"))
     input_x, input_y = cnn.get_inputs()
     output = cnn.get_outputs()
-    tf.saved_model.simple_save(
-            sess,
-            final_model_dir,
-            inputs={"input_x":input_x,
-                    "input_y":input_y},
-            outputs={"predictions":output}
-            )
-    
-    # legacy, in case we can't use simple_save (like for 1.4.1 tensorflow edition on hpc)
-    
-    # builder = tf.saved_model.builder.SavedModelBuilder(final_model_dir)
 
-    # sess.run(train_init_op)
-    # input_x, input_y = iterator.get_next()
+    builder = tf.saved_model.builder.SavedModelBuilder(final_model_dir)
 
-    # text_input_tensor_info = tf.saved_model.utils.build_tensor_info(input_x)
-    # predictions_output_tensor_info = tf.saved_model.utils.build_tensor_info(output)
+    text_input_tensor_info = tf.saved_model.utils.build_tensor_info(input_x)
+    predictions_output_tensor_info = tf.saved_model.utils.build_tensor_info(output)
     
-    # prediction_signature = (
-      # tf.saved_model.signature_def_utils.build_signature_def(
-        # inputs={"text":text_input_tensor_info},
-        # outputs={
-          # "classes":predictions_output_tensor_info
-        # },
-        # method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
-      # )
-    # )
-    # builder.add_meta_graph_and_variables(
-        # sess, [tf.saved_model.tag_constants.SERVING],
-        # signature_def_map={
-            # 'predict_indexing':
-                # prediction_signature,
-        # })    
+    prediction_signature = (
+      tf.saved_model.signature_def_utils.build_signature_def(
+        inputs={"text":text_input_tensor_info},
+        outputs={
+          "classes":predictions_output_tensor_info
+        },
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+      )
+    )
+    builder.add_meta_graph_and_variables(
+        sess, [tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
+            'predict_indexing':
+                prediction_signature,
+        })    
 
-def get_word_to_vec_model(model_path, vocab_length):
-  matrix_size = 100
+
+#    tf.saved_model.simple_save(
+#            sess,
+#            final_model_dir,
+#            inputs={"input_x":input_x,
+#                    "input_y":input_y},
+#            outputs={"predictions":output}
+#            )
+
+def get_word_to_vec_model(model_path, vocab_proc):
+  vocab = vocab_proc.vocab
+  matrix_size = 50
   model = gensim.models.KeyedVectors.load_word2vec_format(model_path, binary=True, limit=matrix_size)
-  print(type(model))
   print(model.vector_size)
   print(len(model.index2word))
   # store the embeddings in a numpy array
   
   # embedding_matrix = np.zeros((len(model.wv.vocab) + 1, EMBEDDING_DIM))
-  embedding_matrix = np.zeros((vocab_length, EMBEDDING_DIM))
+  embedding_matrix = np.zeros((len(vocab), EMBEDDING_DIM))
   # for i in range(len(model.wv.vocab)):
-  max_size = min(len(model.index2word), vocab_length)
-  for i in range(max_size):
-    embedding_vector = model.wv[model.wv.index2word[i]]
-    if embedding_vector is not None:
-      embedding_matrix[i] = embedding_vector
-   
-  # have to add one for some reason? Maybe cuz its length?
-  model_length = matrix_size + 1
-  # free up the memory
+  max_size = min(len(model.index2word), len(vocab))
+
+  for word, idx in vocab.items():
+    if word in model.wv:
+      embedding_vector = model.wv[word]
+      if embedding_vector is not None:
+        embedding_matrix[idx] = embedding_vector
+    else:
+    # I'm pretty sure something is supposed to happen here but idk what
+      pass
+    
+      
+  # this doesn't correlate with our actual vocab indexes (terrible programming Vimig)
+  
+  # for i in range(max_size):
+    # embedding_vector = model.wv[model.wv.index2word[i]]
+    # if embedding_vector is not None:
+      # embedding_matrix[i] = embedding_vector
+  # # print(embedding_matrix[0:2])
+  # # have to add one for some reason? Maybe cuz its length?
+  # model_length = matrix_size + 1
+  # # free up the memory
   del(model)
   
   return embedding_matrix
@@ -277,14 +295,17 @@ def get_word_to_vec_model(model_path, vocab_length):
 def main(argv=None):
   # xml_file = "pubmed_result.xml"
   # xml_file = "small_data.xml"
-  xml_file = "cits.xml"
+  xml_file = "small_data.xml"
+  # xml_file = "cits.xml"
+  # xml_file = "pubmed_result_2012_2018.xml"
+  
   text_list = []
 
-  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list)
+  train_dataset, test_dataset, vocab_processor, max_doc_length = data_load(xml_file, text_list, BATCH_SIZE, TRAIN_SET_PERCENTAGE)
 
   model = None
   if PRETRAINED_W2V_PATH:
-    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, len(vocab_processor.vocab))
+    model = get_word_to_vec_model(PRETRAINED_W2V_PATH, vocab_processor)
     train_CNN(train_dataset,
               test_dataset,
               vocab_processor,
