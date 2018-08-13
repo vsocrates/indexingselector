@@ -54,21 +54,25 @@ DO_TIMING_ANALYSIS = False
 def main(argv=None):  
   text_list = []
 
-  
+  # The data_load method located in the data_utils.py does the brunt of the work and it starts here. 
+  # This includes pulling data from the XML, preprocessing the text (tokenize, lowercase etc.), and creating tf.Datasets
   if globals.POS_XML_FILE:
     aug_text_list = []
     datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=aug_text_list, test_date=globals.SPLIT_WITH_DATE)
   else:
     datasets, vocab_processors, max_doc_lengths, dataset_size = data_load(globals.XML_FILE, text_list, globals.BATCH_SIZE, globals.REMOVE_STOP_WORDS, globals.SHOULD_STEM, globals.LIMIT_VOCAB, globals.MAX_VOCAB_SIZE, globals.TRAIN_SET_PERCENTAGE, with_aux_info=globals.WITH_AUX_INFO, pos_text_list=[], test_date=globals.SPLIT_WITH_DATE)
     
+  # Gets a pretrained w2v model if we want it.
   model_list = {}
   if globals.PRETRAINED_W2V_PATH:
     model_list['text'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "text")
+  # Creates one for all the other text categories
   if globals.WITH_AUX_INFO:
     model_list['affiliations'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "affiliations")
     model_list['keywords'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "keywords")
     model_list['article_title'] = get_word_to_vec_model(globals.PRETRAINED_W2V_PATH, globals.MATRIX_SIZE, vocab_processors, "article_title")
     
+  # Run one of four types of models. "Aux" means that it will include at least one of the following: affiliations, journal title, article title, keywords with the abstract text.
   if globals.MODEL_TYPE == 'CNN':
     train_CNN(datasets,
               vocab_processors,
@@ -99,9 +103,9 @@ def main(argv=None):
               )           
   else:
     print("I don't know how this happened, should be impossible")
-    
-def parse_arguments():
 
+"""Parse all input parameters and save to globals."""
+def parse_arguments():
 
   def restricted_float(x):
       x = float(x)
@@ -160,7 +164,6 @@ def parse_arguments():
   parser.add_argument("-z", "--filter-sizes", help='list of filter sizes [e.g. "(2,3,4)"]', default='"(2,4,5)"')
   parser.add_argument("-n", "--num-filters", help="number of filters per size", type=int, default=100)
 
-  
   # Stdout params
   parser.add_argument("-d", "--debug", help="sets the debug flag providing extra output", action="store_true")
   parser.add_argument("-a", "--save", help="saves the model after training", action="store_true")

@@ -56,7 +56,8 @@ class VocabProcessor:
       # adding punctuation from the same flag
     if self.should_stem:
       self.stemmer = EnglishStemmer()
-      
+  
+  """Gets the next index for defaultdict"""
   def next_value(self):
     self.next += 1
     return self.next
@@ -71,10 +72,7 @@ class VocabProcessor:
     self.next = globals.END_ID  # After 3 comes 4
     self.reverse_vocab = {}
     
-  def reset_test_generator(self):
-    self.test_tuple = zip(self.X_test, self.Y_test)
-  
-
+  """Convert the ids back to strings."""
   def ids_to_string(self, tokens, length=None):
       string = ''.join([self.reverse_vocab[x] for x in tokens[:length]])
       return string
@@ -115,6 +113,7 @@ class VocabProcessor:
         words = [self.stemmer.stem(word) for word in words]
       return words
 
+  
   def tokens_to_id_list(self, tokens):
       return list(map(self.convert_token_to_id, tokens))
 
@@ -127,13 +126,16 @@ class VocabProcessor:
       # id_list = self.sentence_to_id_list(sent)
       # return np.array(id_list)
 
-  def update_reverse_vocab(self):
-      self.reverse_vocab = {id_: token for token, id_ in self.vocab.items()}
+  # All used to map back to vocab, not tested fully or used
 
-  def id_list_to_text(self, id_list):
-      tokens = ''.join(map(lambda x: self.reverse_vocab[x], id_list))
-      return tokens  
+  # def update_reverse_vocab(self):
+      # self.reverse_vocab = {id_: token for token, id_ in self.vocab.items()}
+
+  # def id_list_to_text(self, id_list):
+      # tokens = ''.join(map(lambda x: self.reverse_vocab[x], id_list))
+      # return tokens  
   
+  # Untested
   def save(self, filename):
     """Saves vocabulary processor into given file.
     Args:

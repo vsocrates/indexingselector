@@ -148,9 +148,7 @@ def get_abstract_text_with_targets(elem, output_list):
   
   output_list.append(cit_dict)
 
-'''
-  This file is the one that parses each individual record in the XML file.
-'''
+'''This file is the one that parses each individual record in the XML file.'''
 def get_abstract_text_with_targets_and_metadata(elem, output_list):
   global NUM_POS
   global NUM_NEG
@@ -164,6 +162,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   authors = elem.find(".//AuthorList")
   keywords = elem.find(".//KeywordList")
   
+  # Gets the date info only if we want to split by date. 
   if globals.SPLIT_WITH_DATE:
 
     dcom = medline_cit_tag.find(".//DateCompleted")
@@ -194,8 +193,6 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
   
   if cit_dict["target"] == "MEDLINE":
     NUM_POS += 1
-    # print([etree.tostring(aff, method="text", with_tail=False, encoding='unicode') for aff in affiliations])
-    # print("\n")
   elif cit_dict['target'] == "PubMed-not-MEDLINE":
     NUM_NEG += 1
 
@@ -214,6 +211,7 @@ def get_abstract_text_with_targets_and_metadata(elem, output_list):
 '''  
 @conditional_decorator(profile, DO_TIMING_ANALYSIS)
 def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length, train_size=0.0, with_aux_info=False, pos_text_list=[], test_date=None):
+  # Used to count the number of positive and negative articles
   global NUM_POS
   global NUM_NEG
   NUM_POS = 0
@@ -236,6 +234,7 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
   print("Data size (bytes): ", get_size(text_list))
   print("Parsing took: --- %s seconds ---" % (end_time - start_time))
   
+  # Pull data from a fully-indexed dataset to supplement (upsample) if we don't have enough positive examples
   if globals.POS_XML_FILE:
     start_time = time.time()
     with open(globals.POS_XML_FILE, "rb") as xmlf:
@@ -254,6 +253,7 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
     text_list = text_list + pos_text_list[0:diff]
     print("Num of articles after pos ex addition: ",len(text_list))
 
+  # Downsample the dataset to balance it (either positive or negative)
   np.random.shuffle(text_list)
   if globals.DOWNSAMPLE_TO_MATCH:
     difference = abs(local_num_pos - local_num_neg)
@@ -289,15 +289,12 @@ def data_load(xml_file, text_list, batch_size, remove_stop_words, should_stem, l
   # we use nltk to word tokenize
   vocab_proc_dict = {}
   if with_aux_info:
-    # because there are 5 things we want (including raw abstract text)
+    # because there are 5 things we want (including raw abstract text) we create a vocab processor for each
     for name in ["text", "journal_title", "article_title", "affiliations", "keywords"]:
       vocab_proc_dict[name] = VocabProcessor(word_tokenize, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
-      
-    
     datasets, max_doc_length = prepare_data_text_with_aux(vocab_proc_dict, text_list, test_date, train_size)
   else:
     count_vect = VocabProcessor(word_tokenize, batch_size, remove_stop_words, should_stem, limit_vocab_size, max_vocab_length)
-    # this function creates the datasets using the vocab.py file
     vocab_proc_dict = {"text":count_vect}
     datasets, max_doc_length = prepare_data_text_only(vocab_proc_dict, text_list, test_date, train_size)
         
@@ -440,7 +437,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     if len(word_id_list) > max_doc_length:
       max_doc_length = len(word_id_list)
     abs_text_word_ids.append(word_id_list)
-    
+
+    # then the others
     tokens = jrnl_title_vocab_proc.tokenize(str(doc['journal_title']))
     word_id_list = jrnl_title_vocab_proc.tokens_to_id_list(tokens)      
     if len(word_id_list) > max_jrnl_title_length:
@@ -453,6 +451,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
       max_art_title_length = len(word_id_list)
     art_title_ids.append(word_id_list)
 
+    # Do some extra cleaning for the affiliations to just pull department names
     punc_without_dash = string.punctuation.replace("-", "")
     punc_pattern = "["+ "".join(punc_without_dash) + "]"
     words_by_punc = re.split(punc_pattern, str(doc['affiliations']))
@@ -480,7 +479,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
       labels.append([1])
     elif doc['target'] == "PubMed-not-MEDLINE":
       labels.append([0])
-  
+
+    # Splits by date if we want to test that way. Default is to randomize the dataset and get a percentage
     if globals.SPLIT_WITH_DATE:
       # Keep track of train or test, by date
       test_date
@@ -504,6 +504,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
   
   # now we'll split train/test set
   # TODO: will eventually have to replace this with cross-validation
+  # Revision 8-13-18 Dina mentioned that it actually doesn't make sense during training, but many papers do it???
 
   # this is gross.
   # we'll randomize the data and create train and test datasets using scikit here: 
@@ -523,6 +524,8 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     print("how much in train: ", len(abs_text_train))
     print("how much in test: ", len(abs_text_test))
     globals.TEST_NUM_EXAMPLES = len(abs_text_test)
+
+  # Here, we split by date instead
   else:
     abs_text_train, jrnl_title_train, \
     art_title_train, affl_train, \
@@ -614,7 +617,6 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
     for x, y in data_iter:
       yield x, y
       
-  # Since we regulate the length of epochs, this generator needs to cycle through the data infinitely
   def keyword_test_generator():
     test_tuple = zip(keyword_test, labels_test)
     data_iter = iter(test_tuple)
@@ -691,7 +693,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                         affl_max_length=max_affl_length,
                                         keyword_max_length=max_keyword_length
                                        ) 
-  # TODO: this is for if we want to map backwards, which we can do later.
+  # TODO: this is for if we want to map backwards, which we can do later. Not implemented yet
   # this.update_reverse_vocab()
   return return_datasets, all_max_lengths
 

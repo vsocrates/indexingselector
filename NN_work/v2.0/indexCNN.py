@@ -76,6 +76,11 @@ def train_CNN(datasets,
   
   with sess.as_default():
   
+    """Create iterator from datasets to yield a batch at at time.
+      
+      This is used because we want to use fit_generator which doesn't take in a tf.Dataset but a generator. 
+      However, this might not be the case anymore, if we can upgrade. see https://github.com/keras-team/keras/issues/10110
+    """
     def make_iterator(dataset, batch_num):
         while True:
           iterator = dataset.make_one_shot_iterator()
@@ -93,7 +98,8 @@ def train_CNN(datasets,
                 print(e)
                 print("Unknown Exception Thrown")
               break
-
+    
+    # We calculated the number of elements per batch that we wanted. This ensures that we only get one full set of data per epoch
     train_batch_num = int((dataset_size*(globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE) + 1
     val_batch_num = int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     itr_train = make_iterator(datasets.abs_text_train_dataset, train_batch_num)
@@ -150,14 +156,11 @@ def train_CNN(datasets,
     F1score,
     recall,
     precision,])
-                                                                         # truepos_metricfn,
-                                                                         # trueneg_metricfn,
-                                                                         # falsepos_metricfn,
-                                                                         # falseneg_metricfn])
-    # model._make_predict_function()
-                  # will be useful when we actually combine
-                  # loss_weights=[1., 0.2]
-    
+   # truepos_metricfn,
+   # trueneg_metricfn,
+   # falsepos_metricfn,
+   # falseneg_metricfn])
+   
     callbacks = []
     # callbacks.append(EarlyStopping(monitor="val_))
     callbacks.append(ReduceLROnPlateau())
@@ -182,7 +185,8 @@ def train_CNN(datasets,
                         verbose=verbosity,
                         workers=0,
                         callbacks=callbacks)
-    
+
+    # Saves model with trained weights on all epochs
     if globals.SAVE_MODEL:
       pattern = re.compile(r"[^\/]*$")
       outxml_path = pattern.search(globals.XML_FILE).group(0).split(".")[0]
