@@ -276,7 +276,7 @@ def train_CNNAux(datasets,
       model_output = Dense(1, kernel_regularizer=regularizers.l2(0.01))(dense)
     else:
       model_output = Dense(1,
-        activation="sigmoid",
+        activation="softmax",
         name="main_output")(dense)
 
     
@@ -320,7 +320,7 @@ def train_CNNAux(datasets,
     if globals.DEBUG:
       callbacks = []
       callbacks.append(TensorBoard(log_dir="tboard_logs/{}".format(globals.RUN_NUMBER)))
-      callbacks.append(CSVLogger('indexCNNAux_training.log'))
+      # callbacks.append(CSVLogger('indexCNNAux_training.log'))
       # callbacks.append(ProgbarLogger(count_mode='steps'))
       verbosity = 1
     print(model.summary())
