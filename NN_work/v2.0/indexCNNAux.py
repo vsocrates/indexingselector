@@ -190,6 +190,8 @@ def train_CNNAux(datasets,
 
     # affl_embedding_layer = Flatten()(affl_embedding_layer)
     # auxdropout1 = Dropout(globals.MAIN_DROPOUT_KEEP_PROB[0], name="affldropout")(affl_embedding_layer)
+    
+# --------------------------------------------------------------------------------------------------------------------#####
 
     # auxiliary information 2: keywords
     # aux_input2 = Input(shape=(max_doc_lengths.keyword_max_length,), dtype="int32", name="keyword_input")
@@ -219,8 +221,10 @@ def train_CNNAux(datasets,
     auxdropout3 = Dense(100, activation="linear", name="before_conv_title")(auxdropout3)                                  
     auxdropout3 = Flatten()(auxdropout3)
     
+# --------------------------------------------------------------------------------------------------------------------#####    
     # add CNN layers for "title" input
     # title_cnn = CNNBlock(auxdropout3, "title")
+# --------------------------------------------------------------------------------------------------------------------#####
     
     # # Auxiliary Convolutional block
     # aux_conv_blocks = []
@@ -239,7 +243,7 @@ def train_CNNAux(datasets,
 
     # auxdropout2 = Dropout(MAIN_DROPOUT_KEEP_PROB[1], name="auxdropout2")(aux_conv_blocks_concat)
 
-    
+# --------------------------------------------------------------------------------------------------------------------#####    
     
     # Merge layers and into dense for final output
     concat = Concatenate()([dropout2,
@@ -336,6 +340,8 @@ def train_CNNAux(datasets,
                         workers=0,
                         callbacks=callbacks)
 
+    # This section, in addition to the make_multiple_iterator_for_prediction function above is supposed to pull all the incorrectly classified objects so we can analyze them. Not fully implemented. 
+    
     # val_batch_num = 1 #int((dataset_size*(1-globals.TRAIN_SET_PERCENTAGE)) // globals.BATCH_SIZE)
     # print("val_batch_num: ", val_batch_num)
                         
@@ -390,9 +396,9 @@ def train_CNNAux(datasets,
       outw2v_path = pattern.search(globals.PRETRAINED_W2V_PATH).group(0).split(".")[0]
       model.save("CNNAux_" + globals.RUN_NUMBER + outxml_path + "_" + outw2v_path + "_saved_model.h5")
     
-      
-def CNNBlock(input_layer, name):
 
+def CNNBlock(input_layer, name):
+"""Take an input layer with a descriptive name and create a CNN block out of it"""
   # Convolutional block
   conv_blocks = []
   for sz in globals.FILTER_SIZES:
