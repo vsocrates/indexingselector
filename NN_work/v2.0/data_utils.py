@@ -684,6 +684,7 @@ def prepare_data_text_with_aux(vocab_proc_dict, doc_data_list, test_date, train_
                                 affl_test_dataset=affl_test_dataset,
                                 keyword_train_dataset=keyword_train_dataset,
                                 keyword_test_dataset=keyword_test_dataset)
+                                
   all_max_lengths = Dataset_Max_Lengths(abs_text_max_length=max_doc_length,
                                         jrnl_title_max_length=max_jrnl_title_length,
                                         art_title_max_length=max_art_title_length,
