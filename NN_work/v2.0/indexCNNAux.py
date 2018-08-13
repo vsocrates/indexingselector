@@ -303,14 +303,15 @@ def train_CNNAux(datasets,
     F1score = F1Score()
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
-      metrics=['accuracy', recall, precision, F1score, 
-                           truepos_metricfn,
-                           trueneg_metricfn,
-                           falsepos_metricfn,
-                           falseneg_metricfn]
+      metrics=['accuracy'],)
+			  # recall, precision, F1score, 
+                          # truepos_metricfn,
+                          # trueneg_metricfn,
+                          # falsepos_metricfn,
+                          # falseneg_metricfn]
 
       # loss_weights=[1., 0.0]
-    )
+    #)
     # model._make_predict_function()
                   # will be useful when we actually combine
     
@@ -398,7 +399,7 @@ def train_CNNAux(datasets,
     
 
 def CNNBlock(input_layer, name):
-"""Take an input layer with a descriptive name and create a CNN block out of it"""
+  """Take an input layer with a descriptive name and create a CNN block out of it"""
   # Convolutional block
   conv_blocks = []
   for sz in globals.FILTER_SIZES:
