@@ -1,8 +1,9 @@
-python network_runner.py --model-type CNN --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin -x --word2vec-size 8000 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --filter-sizes "(1,2)" --main-dropout-prob "(0.5, 0.6)" --hidden-dims 50 -d  --max-vocab-size 100 --lower-vocab --run-number 50 
+python network_runner.py --model-type CNN --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin --get-aux-info --word2vec-size 8000 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --filter-sizes "(1,2)" --main-dropout-prob "(0.5, 0.6)" --hidden-dims 50 -d  --max-vocab-size 100 --lower-vocab --run-number 50 
 
-python network_runner.py --model-type LSTM --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin -x --word2vec-size 50 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --main-lstm-dim 64 --main-dropout-prob "(0.5, 0.6)" -d --lower-vocab --run-number 50 
+python network_runner.py --model-type CNNAux --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin --get-aux-info --word2vec-size 8000 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --filter-sizes "(1,2)" --main-dropout-prob "(0.5, 0.6, 0.1)" --hidden-dims 50 -d --aux-trainable --lower-vocab  --run-number 50 
 
-python network_runner.py --model-type LSTMAux --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin -x --word2vec-size 50 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --main-lstm-dim 64 --aux-lstm-dim 64 --dense-dim 64 -d --lower-vocab  --run-number 50 
+python network_runner.py --model-type LSTM --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin --get-aux-info --word2vec-size 50 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --main-lstm-dim 64 --main-dropout-prob "(0.5, 0.6)" -d --lower-vocab --run-number 50 
 
-python network_runner.py --model-type CNNAux --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin -x --word2vec-size 8000 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --filter-sizes "(1,2)" --main-dropout-prob "(0.5, 0.6, 0.1)" --hidden-dims 50 -d --aux-trainable --lower-vocab  --run-number 50 
+python network_runner.py --model-type LSTMAux --data-file ../../data/small_data.xml --w2v-path ../../data/PubMed-and-PMC-w2v.bin --get-aux-info --word2vec-size 50 --remove-stop-words --train-percentage 0.8 --batch-size 2 --num-epochs 2 --main-lstm-dim 64 --aux-lstm-dim 64 --dense-dim 64 -d --lower-vocab  --run-number 50 
+
 

@@ -163,6 +163,7 @@ def train_CNNAux(datasets,
     datasets.art_title_test_dataset],
     val_batch_num)
     
+    # We do our input and embedding lookup and training on the CPU, the rest of the network is on the GPU
     with tf.device('/cpu:0'):    
       main_input = Input(shape=(max_doc_lengths.abs_text_max_length,), dtype="int32", name="main_input")#, tensor=input_x)
       embedding_layer = Embedding(input_dim=len(vocab_processors['text'].vocab),
@@ -303,15 +304,15 @@ def train_CNNAux(datasets,
     F1score = F1Score()
     
     model.compile(optimizer="adam", loss='binary_crossentropy',# loss_weights={"main_output":1., "aux_output":0.5},
-      metrics=['accuracy'],)
-			  # recall, precision, F1score, 
-                          # truepos_metricfn,
-                          # trueneg_metricfn,
-                          # falsepos_metricfn,
-                          # falseneg_metricfn]
+      metrics=['accuracy',
+			  recall, precision, F1score, 
+                          truepos_metricfn,
+                          trueneg_metricfn,
+                          falsepos_metricfn,
+                          falseneg_metricfn]
 
       # loss_weights=[1., 0.0]
-    #)
+    )
     # model._make_predict_function()
                   # will be useful when we actually combine
     
